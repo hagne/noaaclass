@@ -4,6 +4,7 @@ from distutils.core import setup
 import os
 import subprocess
 from pip.req import parse_requirements
+from setuptools.command import easy_install
 
 
 def calculate_version():
@@ -33,6 +34,7 @@ def get_long_description():
         return ''
     # Try to transform the README from Markdown to reStructuredText.
     try:
+        easy_install.main(['-U', 'pyandoc==0.0.1'])
         import pandoc
         pandoc.core.PANDOC_PATH = 'pandoc'
         doc = pandoc.Document()
