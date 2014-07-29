@@ -1,10 +1,7 @@
 import requests
 from bs4 import BeautifulSoup as beautifulsoup
-
-
-class Command(object):
-    def do(self, conn):
-        raise Exception('Subclass responsability!')
+from core import Command
+import re
 
 
 class SignIn(Command):
@@ -13,18 +10,34 @@ class SignIn(Command):
         self.password = password
 
     def do(self, conn):
-        conn.get('classlogin?resource=%2Fsaa%2Fproducts%2Fwelcome')
-        user = {
-            'j_username': self.username,
-            'j_password': self.password
-        }
+        result = conn.get('classlogin?resource=%2Fsaa%2Fproducts%2Fwelcome')
+        user = conn.parser.get_form_dict(result)['j_security_check']
+        user['j_username'] = self.username
+        user['j_password'] = self.password
         result = conn.post('j_security_check', data=user)
-        import re
         login_links = result('script', text=re.compile('writeLoginURL.*();'))
         conn.signed_in = (len(login_links) == 0)
         if not conn.signed_in:
             raise Exception('%s: Invalid NOAA user or wrong password.'
                             % self.username)
+
+
+class Parser(object):
+    def get_value(self, e):
+        return (dict([(o['value'], o.text)
+                      for o in e.find_all('option', value=re.compile('.+'))])
+                if e.name == 'select' else '')
+
+    def get_field_dict(self, form_soup):
+        return dict([(e.attrs['name'], self.get_value(e))
+                    for e in form_soup.find_all(name=['input', 'select'])
+                    if 'name' in e.attrs.keys()])
+
+    def get_form_dict(self, html_soup):
+        forms = html_soup.find_all('form')
+        result = [(f.attrs['action'], self.get_field_dict(f))
+                  for f in forms]
+        return dict(result)
 
 
 class Connection(object):
@@ -34,6 +47,7 @@ class Connection(object):
         self.session = requests.Session()
         self.signin = SignIn(username, password)
         self.get('welcome')
+        self.parser = Parser()
         self.signin.do(self)
 
     @property
@@ -70,9 +84,22 @@ class Connection(object):
 
     def __getattr__(self, name):
         try:
-            return self.load('noaaclass.product.%s' % name)
+            return self.load('noaaclass.product.%s' % name).api(self)
+        except Exception, e:
+            raise Exception('There is no API to the "%s" product.\n%s'
+                            % (name, e))
+
+    def has_local_api(self, product):
+        try:
+            getattr(self, product)
         except Exception:
-            raise Exception('There is no API to the "%s" product.' % name)
+            return False
+        return True
+
+    def products(self):
+        form = self.parser.get_form_dict(self.get('welcome'))['search']
+        return [k.lower() for k in form['datatype_family'].keys()
+                if self.has_local_api(k.lower())]
 
 
 def connect(username, password):

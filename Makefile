@@ -35,7 +35,7 @@ show-version:
 	@ $(SOURCE_ACTIVATE) $(PYTHON) --version
 
 test:
-	@ $(SOURCE_ACTIVATE) $(PYTHON) tests/noaaclass_test.py
+	$(SOURCE_ACTIVATE) $(PYTHON) tests/
 	@ echo "[ tested       ] the system was completly tested"
 
 shell:
@@ -43,7 +43,7 @@ shell:
 	@ echo "[ tested       ] the system was completly tested"
 
 test-coverage-travis-ci:
-	@ $(SOURCE_ACTIVATE) coverage run --source='noaaclass/' tests/noaaclass_test.py
+	@ $(SOURCE_ACTIVATE) coverage run --source='noaaclass/' tests/
 
 test-coveralls:
 	@ $(SOURCE_ACTIVATE) coveralls
