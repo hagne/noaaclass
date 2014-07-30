@@ -1,20 +1,7 @@
 from noaaclass import core
 
-translate = {
-    'area': {
-        'north': 'nlat',
-        'south': 'slat',
-        'east': 'elon',
-        'west': 'wlon'
-    }
-
-}
 
 class Subscriber(object):
-    def __init__(self, conn):
-        self.conn = conn
-        self.item_url = 'sub_details?sub_id=%s&enabled=%s'
-
     def row_to_dict(self, row):
         elements = row.select('td')
         _id = elements[3].a.text
@@ -34,10 +21,8 @@ class Subscriber(object):
 
 
 class api(core.api):
-    @property
-    def subscribe(self):
-        return Subscriber(self.connection)
+    def get(self):
+        pass
 
-    @property
-    def order():
-        return None
+    def set(self, data):
+        pass

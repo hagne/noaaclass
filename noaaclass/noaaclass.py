@@ -1,17 +1,17 @@
 import requests
 from bs4 import BeautifulSoup as beautifulsoup
-from core import Command
 import re
+from core import Action
 
 
-class SignIn(Command):
+class Auth(object):
     def __init__(self, username, password):
         self.username = username
         self.password = password
 
     def do(self, conn):
         result = conn.get('classlogin?resource=%2Fsaa%2Fproducts%2Fwelcome')
-        user = conn.parser.get_form_dict(result)['j_security_check']
+        user = conn.translate.get_dict(result)['j_security_check']
         user['j_username'] = self.username
         user['j_password'] = self.password
         result = conn.post('j_security_check', data=user)
@@ -22,7 +22,7 @@ class SignIn(Command):
                             % self.username)
 
 
-class Parser(object):
+class Translate(object):
     def get_value(self, e):
         return (dict([(o['value'], o.text)
                       for o in e.find_all('option', value=re.compile('.+'))])
@@ -33,11 +33,23 @@ class Parser(object):
                     for e in form_soup.find_all(name=['input', 'select'])
                     if 'name' in e.attrs.keys()])
 
-    def get_form_dict(self, html_soup):
-        forms = html_soup.find_all('form')
+    def get_dict(self, html):
+        forms = html.select('form')
         result = [(f.attrs['action'], self.get_field_dict(f))
-                  for f in forms]
+                  for f in forms if 'action' in f.attrs]
         return dict(result)
+
+
+class Request(Action):
+    def get_main_form(self):
+        html = self.conn.get('welcome')
+        return html, 'search'
+
+
+class Subscribe(Action):
+    def get_main_form(self):
+        html = self.conn.get('subscriptions')
+        return html, 'sub_details'
 
 
 class Connection(object):
@@ -45,10 +57,12 @@ class Connection(object):
         self.base_uri = 'https://www.nsof.class.noaa.gov/saa/products/'
         self.headers = {'User-Agent': 'Mozilla/5.0'}
         self.session = requests.Session()
-        self.signin = SignIn(username, password)
+        self.authenticate = Auth(username, password)
         self.get('welcome')
-        self.parser = Parser()
-        self.signin.do(self)
+        self.translate = Translate()
+        self.authenticate.do(self)
+        self.request = Request(self)
+        self.subscribe = Subscribe(self)
 
     @property
     def cookies(self):
@@ -78,28 +92,6 @@ class Connection(object):
                                                cookies=self.cookies,
                                                data=data)
         return beautifulsoup(self.last_response.text)
-
-    def load(self, lib):
-        return __import__(lib, fromlist=[''])
-
-    def __getattr__(self, name):
-        try:
-            return self.load('noaaclass.product.%s' % name).api(self)
-        except Exception, e:
-            raise Exception('There is no API to the "%s" product.\n%s'
-                            % (name, e))
-
-    def has_local_api(self, product):
-        try:
-            getattr(self, product)
-        except Exception:
-            return False
-        return True
-
-    def products(self):
-        form = self.parser.get_form_dict(self.get('welcome'))['search']
-        return [k.lower() for k in form['datatype_family'].keys()
-                if self.has_local_api(k.lower())]
 
 
 def connect(username, password):
