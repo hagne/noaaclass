@@ -22,7 +22,7 @@ class Subscriber(object):
 
 class api(core.api):
     def get(self):
-        pass
+        return {}
 
     def set(self, data):
-        pass
+        return {}

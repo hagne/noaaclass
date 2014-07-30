@@ -5,7 +5,7 @@ from noaaclass import core
 
 class TestNoaaclass(unittest.TestCase):
     def setUp(self):
-        self.noaa = noaaclass.connect('noaa.gvarim', 'noaaadmin')
+        self.noaa = noaaclass.connect('noaaclass.t', 'noaaclassadmin')
 
     def test_login(self):
         # Check if the connection login was succsessful.
