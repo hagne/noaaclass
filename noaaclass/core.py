@@ -34,8 +34,12 @@ class api(object):
     def conn(self):
         return self.action.conn
 
+    @property
+    def action_name(self):
+        return self.action.__class__.__name__.lower()
+
     def get(self):
-        raise Exception('Subclass responsability!')
+        return getattr(self, '%s_get' % self.action_name)()
 
     def set(self, data):
-        raise Exception('Subclass responsability!')
+        return getattr(self, '%s_set' % self.action_name)(data)

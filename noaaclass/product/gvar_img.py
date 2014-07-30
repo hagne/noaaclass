@@ -21,8 +21,14 @@ class Subscriber(object):
 
 
 class api(core.api):
-    def get(self):
+    def subscribe_get(self):
         return {}
 
-    def set(self, data):
+    def subscribe_set(self, data):
+        return {}
+
+    def request_get(self):
+        return {}
+
+    def request_set(self, data):
         return {}
