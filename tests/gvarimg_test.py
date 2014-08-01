@@ -12,10 +12,11 @@ class TestGvarimg(unittest.TestCase):
              'south': -43.59,
              'west': -71.02,
              'east': -48.52,
-             'options': ['SH', 'R'],
+             'coverage': ['SH'],
+             'schedule': ['R'],
              'satellite': ['G13'],
              'channel': [1, 2, 3],
-             'format': 'NetCDF'
+             'format': 'NetCDF',
              },
             {'id': '+',
              'enabled': False,
@@ -23,10 +24,11 @@ class TestGvarimg(unittest.TestCase):
              'south': -43.59,
              'west': -71.02,
              'east': -48.52,
-             'options': ['SH', 'R'],
+             'coverage': ['SH'],
+             'schedule': ['R'],
              'satellite': ['G13'],
              'channel': [1, 2, 3],
-             'format': 'NetCDF'
+             'format': 'NetCDF',
              },
         ]
 
@@ -37,6 +39,10 @@ class TestGvarimg(unittest.TestCase):
     def test_subscribe_set_new_elements(self):
         self.gvar_img = self.noaa.subscribe.gvar_img
         self.gvar_img.set(self.data)
+        result = self.gvar_img.get()
+        self.assertEquals(len(result), 2)
+        [self.assertEquals(result[k], v) for r in self.data
+         for k, v in r.items() if k != 'id']
 
     def test_subscribe_set_edit_elements(self):
         pass
