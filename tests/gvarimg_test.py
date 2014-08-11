@@ -15,26 +15,27 @@ class TestGvarimg(unittest.TestCase):
              'coverage': ['SH'],
              'schedule': ['R'],
              'satellite': ['G13'],
-             'channel': [1, 2, 3],
+             'channel': [1],
              'format': 'NetCDF',
              },
             {'id': '+',
              'enabled': False,
-             'north': -26.72,
-             'south': -43.59,
-             'west': -71.02,
-             'east': -48.52,
+             'north': -26.73,
+             'south': -43.52,
+             'west': -71.06,
+             'east': -48.51,
              'coverage': ['SH'],
              'schedule': ['R'],
              'satellite': ['G13'],
-             'channel': [1, 2, 3],
+             'channel': [2],
              'format': 'NetCDF',
              },
         ]
+        # TODO: Multiple selection on satellite, coverage, schedule, channel
 
     def test_subscribe_get_empty(self):
         self.gvar_img = self.noaa.subscribe.gvar_img
-        self.assertEquals(self.gvar_img.get(), {})
+        self.assertEquals(self.gvar_img.get(), [])
 
     def test_subscribe_set_new_elements(self):
         self.gvar_img = self.noaa.subscribe.gvar_img

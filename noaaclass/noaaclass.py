@@ -10,11 +10,12 @@ class Auth(object):
         self.password = password
 
     def do(self, conn):
-        result = conn.get('classlogin?resource=%2Fsaa%2Fproducts%2Fwelcome')
+        result = conn.get('classlogin?resource=%2Fsaa%2Fproducts%2Fwelcome',
+                          'https')
         user = conn.translate.get_dict(result)['j_security_check']
         user['j_username'] = self.username
         user['j_password'] = self.password
-        result = conn.post('j_security_check', data=user)
+        result = conn.post('j_security_check', data=user, proto='https')
         login_links = result('script', text=re.compile('writeLoginURL.*();'))
         conn.signed_in = (len(login_links) == 0)
         if not conn.signed_in:
@@ -54,7 +55,7 @@ class Subscribe(Action):
 
 class Connection(object):
     def __init__(self, username, password):
-        self.base_uri = 'https://www.nsof.class.noaa.gov/saa/products/'
+        self.base_uri = '://www.nsof.class.noaa.gov/saa/products/'
         self.headers = {'User-Agent': 'Mozilla/5.0'}
         self.session = requests.Session()
         self.authenticate = Auth(username, password)
@@ -80,17 +81,23 @@ class Connection(object):
             raise Exception('Connection error (%i).' % response.status_code)
         self._last_response = response
 
-    def get(self, url):
-        self.last_response = self.session.get(self.base_uri + url,
-                                              headers=self.headers,
-                                              cookies=self.cookies)
+    def get(self, url, proto='http'):
+        self.last_response = self.session.get(proto + self.base_uri + url,
+                                              # headers=self.headers,
+                                              cookies=self.cookies,
+                                              allow_redirects=True)
         return beautifulsoup(self.last_response.text)
 
-    def post(self, url, data):
-        self.last_response = self.session.post(self.base_uri + url,
-                                               headers=self.headers,
+    def post(self, url, data, proto='http'):
+        print proto + self.base_uri + url
+        # headers = {'content-type': 'application/x-www-form-urlencoded'}
+        headers = {}
+        headers.update(self.headers)
+        self.last_response = self.session.post(proto + self.base_uri + url,
+                                               headers=headers,
                                                cookies=self.cookies,
-                                               data=data)
+                                               data=data,
+                                               allow_redirects=True)
         return beautifulsoup(self.last_response.text)
 
 
