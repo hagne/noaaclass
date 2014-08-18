@@ -22,81 +22,68 @@ class Subscriber(object):
 
 
 class api(core.api):
+    def register(self):
+        self.name = 'GVAR_IMG'
+        direct = lambda x: x
+        enabled_to_local = lambda x: x == 'Y'
+        enabled_to_remote = lambda x: 'Y' if x else 'N'
+        single = lambda x, t: t(x[0])
+        multiple = lambda l, t: list(map(t, l))
+        self.translate(single, 'enabled', enabled_to_local,
+                       'subhead_sub_enabled', enabled_to_remote)
+        self.translate(single, 'name', direct, 'subhead_sub_description', str)
+        self.translate(single, 'north', float, 'nlat', str)
+        self.translate(single, 'south', float, 'slat', str)
+        self.translate(single, 'west', float, 'wlon', str)
+        self.translate(single, 'east', float, 'elon', str)
+        self.translate(multiple, 'coverage', direct, 'Coverage', direct)
+        self.translate(multiple, 'schedule', direct, 'Satellite Schedule',
+                       direct)
+        self.translate(multiple, 'satellite', direct, 'Satellite', direct)
+        self.translate(multiple, 'channel', int, 'chan_%s' % self.name, str)
+        self.translate(single, 'format', direct, 'format_%s' % self.name, str)
+
     def subscribe_get(self):
-        data = (self.conn.get('subscriptions').select(
-            '.class_table tr td:nth-of-type(4) a'))
+        noaa = self.conn
+        page = noaa.get('subscriptions')
+        data = page.select('.class_table td a')
         enabled = lambda x: re.match(r'.*%22(.*)%22.*', x).group(1) == 'Y'
-        data = [{'id': d.text, 'enabled': enabled(d['href'])} for d in data]
+        data = [{'id': d.text, 'enabled': enabled(d['href'])}
+                for d in data if d.text.isdigit()]
         for d in data:
-            page = self.conn.get('sub_details?sub_id=%s&enabled=%s'
-                                 % (d['id'], 'Y' if d['enabled'] else 'N'))
-            d['north'] = float(self.get_textbox(page, 'nlat'))
-            d['south'] = float(self.get_textbox(page, 'slat'))
-            d['west'] = float(self.get_textbox(page, 'wlon'))
-            d['east'] = float(self.get_textbox(page, 'elon'))
-            d['coverage'] = self.get_checkbox(page, 'Coverage')
-            d['schedule'] = self.get_checkbox(page, 'Schedule')
-            d['satellite'] = self.get_select(page, 'Satellite')
-        return data
+            noaa.get('sub_details?sub_id=%s&enabled=%s'
+                     % (d['id'], 'Y' if d['enabled'] else 'N'))
+            forms = noaa.translator.get_forms(noaa.last_response_soup)
+            tmp = forms['sub_frm']
+            noaa.post('sub_deliver', tmp, form_name='sub_frm')
+            forms = noaa.translator.get_forms(noaa.last_response_soup)
+            join = lambda x, y: dict(x.items() + y.items())
+            tmp = join(tmp, forms['sub_frm'])
+            d.update(self.post_to_local(tmp))
+        return data  # results
 
     def subscribe_new(self, e):
         name = __name__.split('.')[-1].upper()
         self.conn.get('sub_details?sub_id=0&'
                       'datatype_family=%s&submit.x=40&submit.y=11' %
                       name)
-        data = {
-            'df': name,
-            'search_opt': 'SC',
-            'gid_pattern': '',
-            'orb_pattern': '',
-            'sub_page_source': 'sub_search',
-            'subhead_sub_enabled': 'Y' if e['enabled'] else 'N',
-            'subhead_sub_description': ('[auto] %s %s' %
-                                        (str(e['north']), str(e['west']))),
-            'nlat': str(e['north']),
-            'slat': str(e['south']),
-            'wlon': str(e['west']),
-            'elon': str(e['east']),
-            'minDiff': '1.0',
-            'Coverage': e['coverage'][0],
-            'Satellite': e['satellite'][0],
-            'Satellite Schedule': e['schedule'][0],
-            'limit_search': 'Y',
-            'max_lat_range': '180',
-            'max_lon_range': '359',
-        }
-        self.conn.post('sub_deliver', data)
+        data = self.local_to_post(e)
+        self.conn.post('sub_deliver', data, form_name='sub_frm')
         channel_mask = list('000000' + 'X' * 24)
+        data = self.local_to_post(e)
         for i in e['channel']:
             channel_mask[i-1] = '1'
-        data = {
-            'sub_page_source': 'sub_deliver',
-            'sub_sched_opt': 'N',
-            'sub_notif_opt': 'Y',
-            'digital_sig_opt': 'N',
-            'headers_opt': 'Y',
-            'deliv_manifest_tda': '0',
-            'deliv_checksum_opt': 'N',
-            'geo_%s' % name: 'Y',
-            'bits_%s' % name: '16',
-            'format_%s' % name: e['format'],
-            'channels_%s' % name: ''.join(channel_mask),
-            'chan_%s' % name: str(e['channel'][0]),
-            'visresolution': '1',
-            'irresolution': '1',
-            'spat_%s' % name: '1,1',
-            'map_%s' % name: 'Y'
-        }
-        return self.conn.post('sub_save', data)
+            data['channels_%s' % name] = ''.join(channel_mask),
+        self.conn.post('sub_save', data, form_name='sub_frm')
 
     def subscribe_edit(self, e):
         pass
 
     def subscribe_remove(self, e):
-        pass
+        self.conn.get('sub_delete?actionbox=%s' % e['id'])
 
     def subscribe_set(self, data):
-        old_data = self.request_get()
+        old_data = self.subscribe_get()
         remove = [e for e in old_data
                   if e['id'] not in [x['id'] for x in data]]
         new = [e for e in data if e['id'] is '+']
@@ -104,7 +91,6 @@ class api(core.api):
         [self.subscribe_new(e) for e in new]
         [self.subscribe_edit(e) for e in edit]
         [self.subscribe_remove(e) for e in remove]
-        return self.request_get()
 
     def request_get(self):
         return {}
