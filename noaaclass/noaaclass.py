@@ -55,8 +55,8 @@ class Translator(object):
                     itertools.groupby(list_of_tuples, lambda x: x[0]))
         cleaned = lambda l: [e for e in l if e != '']
         clear = lambda l: cleaned(l) if len(cleaned(l)) else ['']
-        resume = lambda (k, v): (k,
-                                 clear(v if not isinstance(v[0], list) else v[0]))
+        resume = lambda (k, v): (k, clear(v if not isinstance(v[0], list)
+                                          else v[0]))
         return dict(map(resume, _aux.items()))
 
     def get_fields(self, form_soup, show_value):
@@ -142,7 +142,8 @@ class Connection(object):
         self.last_response = self.session.get(proto + self.base_uri + url,
                                               headers=self.headers,
                                               cookies=self.cookies,
-                                              allow_redirects=True)
+                                              allow_redirects=True,
+                                              timeout=1.0)
         return self.last_response_soup
 
     def post(self, url, data, proto='http', form_name=None):
@@ -152,7 +153,8 @@ class Connection(object):
                                                headers=self.headers,
                                                cookies=self.cookies,
                                                data=form,
-                                               allow_redirects=True)
+                                               allow_redirects=True,
+                                               timeout=1.0)
         return self.last_response_soup
 
 
