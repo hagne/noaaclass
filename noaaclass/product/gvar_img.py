@@ -77,17 +77,30 @@ class api(core.api):
         self.conn.post('sub_save', data, form_name='sub_frm')
 
     def subscribe_edit(self, e):
-        pass
+        name = __name__.split('.')[-1].upper()
+        data = self.local_to_post(e)
+        self.conn.get('sub_details?sub_id=%s&enabled=%s'
+                      % (e['id'], data['subhead_sub_enabled']))
+        data = self.local_to_post(e)
+        self.conn.post('sub_deliver', data, form_name='sub_frm')
+        channel_mask = list('000000' + 'X' * 24)
+        data = self.local_to_post(e)
+        for i in e['channel']:
+            channel_mask[i-1] = '1'
+            data['channels_%s' % name] = ''.join(channel_mask),
+        self.conn.post('sub_save', data, form_name='sub_frm')
 
     def subscribe_remove(self, e):
         self.conn.get('sub_delete?actionbox=%s' % e['id'])
 
     def subscribe_set(self, data):
+        select = lambda i, data: [d for d in data if d['id'] == i][0]
+        changed = lambda x, data: x != select(x['id'], data)
         old_data = self.subscribe_get()
         remove = [e for e in old_data
                   if e['id'] not in [x['id'] for x in data]]
         new = [e for e in data if e['id'] is '+']
-        edit = [e for e in data if e not in new and '+' in e['id']]
+        edit = [e for e in data if e not in new and changed(e, old_data)]
         [self.subscribe_new(e) for e in new]
         [self.subscribe_edit(e) for e in edit]
         [self.subscribe_remove(e) for e in remove]

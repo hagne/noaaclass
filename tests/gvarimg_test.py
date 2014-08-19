@@ -51,17 +51,25 @@ class TestGvarimg(unittest.TestCase):
 
     def test_subscribe_set_new_elements(self):
         self.gvar_img = self.noaa.subscribe.gvar_img
-        result = self.gvar_img.set(self.data)
-        self.assertEquals(len(result), 2)
+        copy = self.gvar_img.set(self.data)
+        self.assertEquals(len(copy), 2)
         sort = sorted
-        [self.assertEquals(sort(result[i].keys()), sort(self.data[i].keys()))
+        [self.assertEquals(sort(copy[i].keys()), sort(self.data[i].keys()))
          for i in range(len(self.data))]
-        [self.assertEquals(result[i][k], v)
+        [self.assertEquals(copy[i][k], v)
          for i in range(len(self.data)) for k, v in self.data[i].items()
          if k is not 'id']
 
     def test_subscribe_set_edit_elements(self):
-        pass
+        self.gvar_img = self.noaa.subscribe.gvar_img
+        copy = self.gvar_img.set(self.data)
+        self.assertEquals(len(copy), 2)
+        copy[0]['name'] = '[auto] name changed'
+        copy[1]['channel'] = [4, 5]
+        self.gvar_img.set(copy)
+        edited = self.gvar_img.get()
+        self.assertEquals(edited[0]['name'], copy[0]['name'])
+        self.assertEquals(edited[1]['channel'], copy[1]['channel'])
 
     def test_subscribe_set_remove_element(self):
         self.gvar_img = self.noaa.subscribe.gvar_img
