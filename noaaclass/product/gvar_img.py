@@ -60,7 +60,7 @@ class api(core.api):
             join = lambda x, y: dict(x.items() + y.items())
             tmp = join(tmp, forms['sub_frm'])
             d.update(self.post_to_local(tmp))
-        return data  # results
+        return data
 
     def subscribe_new(self, e):
         name = __name__.split('.')[-1].upper()

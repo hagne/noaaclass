@@ -43,8 +43,7 @@ class TestGvarimg(unittest.TestCase):
         # TODO: Multiple selection on satellite, coverage, schedule, channel
 
     def tearDown(self):
-        # self.remove_all_in_server()
-        pass
+        self.remove_all_in_server()
 
     def test_subscribe_get_empty(self):
         self.gvar_img = self.noaa.subscribe.gvar_img
@@ -65,7 +64,12 @@ class TestGvarimg(unittest.TestCase):
         pass
 
     def test_subscribe_set_remove_element(self):
-        pass
+        self.gvar_img = self.noaa.subscribe.gvar_img
+        copy = self.gvar_img.set(self.data)
+        self.assertEquals(self.gvar_img.get(), copy)
+        copy.pop(0)
+        self.gvar_img.set(copy)
+        self.assertEquals(self.gvar_img.get(), copy)
 
     def test_request(self):
         self.gvar_img = self.noaa.request.gvar_img
