@@ -32,17 +32,19 @@ If you want to help us or report an issue join to us through the [GitHub issue t
 Example
 --------
 
-It can show all the supported products to be subscripted:
+It can show all the supported products to be subscribed:
 
 ```python
 import noaaclass
 noaa = noaaclass.connect('username', 'password')
-print self.noaa.subscribe.products()
+print noaa.subscribe.products()
 ```
 
-Then it can create new **subscriptions** to the **gvar_img** product:
+Then it can *create new* **subscriptions** to the **gvar_img** product:
 
 ```python
+import noaaclass
+noaa = noaaclass.connect('username', 'password')
 data = [
     {
         'id': '+',
@@ -73,21 +75,27 @@ data = [
         'format': 'NetCDF',
     },
 ]
-self.noaa.subscribe.gvar_img.set(data)
+noaa.subscribe.gvar_img.set(data)
 ```
 
-Also, you can retrieve subscription from the noaa class subscripted:
+Also, you can *retrieve all* the subscriptions to the gvar_img product: 
 
 ```python
-data = self.noaa.subscribe.gvar_img.get()
+import noaaclass
+noaa = noaaclass.connect('username', 'password')
+data = noaa.subscribe.gvar_img.get()
 ```
 
-Last, you can modify or delete the previous subscriptions:
+Last, you can *modify* or *delete* the previous subscriptions:
 
 ```python
+import noaaclass
+noaa = noaaclass.connect('username', 'password')
+data = noaa.subscribe.gvar_img.get()
 data[1]['name'] = '[auto] name changed!'
+data[1]['enabled'] = True
 data.pop(0)
-data = self.noaa.subscribe.gvar_img.set(data)
+data = noaa.subscribe.gvar_img.set(data)
 ```
 
 About
