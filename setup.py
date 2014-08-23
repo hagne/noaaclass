@@ -52,7 +52,7 @@ setup(
     author_email='eloy.colell@gmail.com',
     packages=['noaaclass', ],
     url='https://github.com/ecolell/noaaclass',
-    license='MIT License, see LICENCE.txt',
+    license='MIT',
     description=('A python library that allow to request images '
                  'to the NOAA CLASS (Comprehensive Large Array-Data '
                  'Stewardship System).'),
