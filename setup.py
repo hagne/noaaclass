@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from distutils.core import setup
+from setuptools import setup, find_packages
 import os
 import subprocess
 from pip.req import parse_requirements
@@ -50,7 +50,7 @@ setup(
     version=version_git,
     author=u'Eloy Adonis Colell',
     author_email='eloy.colell@gmail.com',
-    packages=['noaaclass', ],
+    packages=find_packages(),
     url='https://github.com/ecolell/noaaclass',
     license='MIT',
     description=('A python library that allow to request images '

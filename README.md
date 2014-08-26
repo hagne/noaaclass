@@ -35,7 +35,7 @@ Example
 It can show all the supported products to be subscribed:
 
 ```python
-import noaaclass
+from noaaclass import noaaclass
 noaa = noaaclass.connect('username', 'password')
 print noaa.subscribe.products()
 ```
@@ -43,7 +43,7 @@ print noaa.subscribe.products()
 Then it can *create new* **subscriptions** to the **gvar_img** product:
 
 ```python
-import noaaclass
+from noaaclass import noaaclass
 noaa = noaaclass.connect('username', 'password')
 data = [
     {
@@ -81,7 +81,7 @@ noaa.subscribe.gvar_img.set(data)
 Also, you can *retrieve all* the subscriptions to the gvar_img product: 
 
 ```python
-import noaaclass
+from noaaclass import noaaclass
 noaa = noaaclass.connect('username', 'password')
 data = noaa.subscribe.gvar_img.get()
 ```
@@ -89,7 +89,7 @@ data = noaa.subscribe.gvar_img.get()
 Last, you can *modify* or *delete* the previous subscriptions:
 
 ```python
-import noaaclass
+from noaaclass import noaaclass
 noaa = noaaclass.connect('username', 'password')
 data = noaa.subscribe.gvar_img.get()
 data[1]['name'] = '[auto] name changed!'
