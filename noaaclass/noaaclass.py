@@ -17,7 +17,8 @@ class Auth(object):
             conn.get('classlogin?resource=%2Fsaa%2Fproducts%2Fwelcome',
                      'https')
         except ConnectionError:
-            raise Exception('NOAA CLASS is down until.')
+            raise Exception('NOAA CLASS is down until %s.' %
+                            str(conn.next_up_datetime()))
 
     def fill_login_form(self, conn):
         user = conn.translator.get_forms(conn.last_response_soup)['frmLogin']
