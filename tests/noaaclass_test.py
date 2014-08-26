@@ -1,11 +1,20 @@
 import unittest
 from noaaclass import noaaclass
 from noaaclass import core
+from datetime import datetime
 
 
 class TestNoaaclass(unittest.TestCase):
     def setUp(self):
         self.noaa = noaaclass.connect('noaaclass.t', 'noaaclassadmin')
+
+    def test_next_up_datetime(self):
+        # Should return an UTC time between the start and the end.
+        from pytz import utc
+        start = datetime.utcnow().replace(tzinfo=utc)
+        time = noaaclass.next_up_datetime()
+        end = datetime.utcnow().replace(tzinfo=utc)
+        self.assertTrue(start <= time <= end)
 
     def test_login(self):
         # Check if the connection login was succsessful.

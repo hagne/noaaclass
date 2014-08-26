@@ -78,7 +78,7 @@ data = [
 noaa.subscribe.gvar_img.set(data)
 ```
 
-Also, you can *retrieve all* the subscriptions to the gvar_img product: 
+Next, you can *retrieve all* the subscriptions to the gvar_img product: 
 
 ```python
 from noaaclass import noaaclass
@@ -86,7 +86,7 @@ noaa = noaaclass.connect('username', 'password')
 data = noaa.subscribe.gvar_img.get()
 ```
 
-Last, you can *modify* or *delete* the previous subscriptions:
+Also, you can *modify* or *delete* the previous subscriptions:
 
 ```python
 from noaaclass import noaaclass
@@ -97,6 +97,14 @@ data[1]['enabled'] = True
 data.pop(0)
 data = noaa.subscribe.gvar_img.set(data)
 ```
+
+Last, you can get the next datetime (in UTC format) in which the website is going to be running:
+
+```python
+from noaaclass import noaaclass
+noaaclass.next_up_datetime()
+```
+
 
 About
 -----

@@ -1,8 +1,10 @@
 import requests
+from requests.exceptions import ConnectionError
 from bs4 import BeautifulSoup as beautifulsoup
 import re
 from core import Action
 import itertools
+from datetime import datetime, timedelta
 
 
 class Auth(object):
@@ -10,19 +12,33 @@ class Auth(object):
         self.username = username
         self.password = password
 
-    def do(self, conn):
-        result = conn.get('classlogin?resource=%2Fsaa%2Fproducts%2Fwelcome',
-                          'https')
-        user = conn.translator.get_forms(result)['frmLogin']
+    def load_home_page(self, conn):
+        try:
+            conn.get('classlogin?resource=%2Fsaa%2Fproducts%2Fwelcome',
+                     'https')
+        except ConnectionError:
+            raise Exception('NOAA CLASS is down until.')
+
+    def fill_login_form(self, conn):
+        user = conn.translator.get_forms(conn.last_response_soup)['frmLogin']
         user['j_username'] = self.username
         user['j_password'] = self.password
-        result = conn.post('j_security_check', data=user, proto='https',
-                           form_name='frmLogin')
-        login_links = result('script', text=re.compile('writeLoginURL.*();'))
+        conn.post('j_security_check', data=user, proto='https',
+                  form_name='frmLogin')
+
+    def check_login_result(self, conn):
+        page = conn.last_response_soup
+        login_links = page('script', text=re.compile('writeLoginURL.*();'))
         conn.signed_in = (len(login_links) == 0)
         if not conn.signed_in:
             raise Exception('%s: Invalid NOAA user or wrong password.'
                             % self.username)
+
+    def do(self, conn):
+        seconds = self.load_home_page(conn)
+        self.fill_login_form(conn)
+        self.check_login_result(conn)
+        return seconds
 
 
 class Translator(object):
@@ -107,16 +123,35 @@ class Subscribe(Action):
 
 
 class Connection(object):
-    def __init__(self, username, password):
-        self.base_uri = '://www.nsof.class.noaa.gov/saa/products/'
+    def __init__(self, username=None, password=None):
         self.headers = {'User-Agent': 'Mozilla/5.0'}
         self.session = requests.Session()
-        self.authenticate = Auth(username, password)
-        self.get('welcome')
-        self.translator = Translator()
-        self.authenticate.do(self)
-        self.request = Request(self)
-        self.subscribe = Subscribe(self)
+        if username and password:
+            self.base_uri = '://www.nsof.class.noaa.gov/saa/products/'
+            self.authenticate = Auth(username, password)
+            self.get('welcome')
+            self.translator = Translator()
+            self.authenticate.do(self)
+            self.request = Request(self)
+            self.subscribe = Subscribe(self)
+        else:
+            self.base_uri = '://www.nsof.class.noaa.gov'
+
+    def next_up_datetime(self):
+        end = datetime.utcnow()
+        self.get('')
+        middle = self.last_response_soup.select('#middle p')
+        if len(middle) > 0:
+            text = middle[1].text
+            regex = re.compile(", (.*), from (.*) UTC .* through (.*) UTC")
+            params = list(regex.findall(text)[0])
+            pattern = '%m/%d/%y %H%M'
+            begin = datetime.strptime('%s %s' % tuple(params[0:2]), pattern)
+            end = datetime.strptime('%s %s' % (params[0], params[2]), pattern)
+            if begin >= end:
+                end += timedelta(days=1)
+        from pytz import utc
+        return end.replace(tzinfo=utc)
 
     @property
     def cookies(self):
@@ -160,3 +195,8 @@ class Connection(object):
 
 def connect(username, password):
     return Connection(username, password)
+
+
+def next_up_datetime():
+    conn = Connection()
+    return conn.next_up_datetime()
