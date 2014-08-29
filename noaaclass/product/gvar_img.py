@@ -83,9 +83,38 @@ class api(core.api):
                   if e['id'] not in [x['id'] for x in data]]
         new = [e for e in data if e['id'] is '+']
         edit = [e for e in data if e not in new and changed(e, old_data)]
-        list(map(lambda e: self.subscribe_new(e), new))
-        list(map(lambda e: self.subscribe_edit(e), edit))
-        list(map(lambda e: self.subscribe_remove(e), remove))
+        list(map(self.subscribe_new, new))
+        list(map(self.subscribe_edit, edit))
+        list(map(self.subscribe_remove, remove))
+
+    def request_get_parse_area(self, head, d):
+        coords = ['south', 'north', 'west', 'east']
+        for c in range(len(coords)):
+            d[coords[c]] = float(head[8+c].text) / 100
+
+    def request_get_parse_item(self, noaa, d):
+        head = noaa.last_response_soup.select('.class_table td')
+        d['format'] = head[1].text
+        self.request_get_parse_area(head, d)
+        file_item = lambda row, i: row.select('td')[i].text
+        file_data = lambda row: (file_item(row, 3),
+                                 int(file_item(row, 5)))
+        files = map(file_data,
+                    noaa.last_response_soup.select('.zebra tr')[1:])
+        d['files'].extend(files)
+
+    def request_get_parse_order(self, url, noaa, d):
+        table = noaa.last_response_soup.select('.class_table td')
+        d['delivered'] = (table[4].text is 'Order Delivered')
+        d['datetime'] = datetime.strptime(table[3].text,
+                                          '%Y-%m-%d %H:%M:%S')
+        d['format'] = ''
+        item = lambda i: i.text
+        items = map(item, noaa.last_response_soup.select('.zebra td a'))
+        d['files'] = []
+        for i in items:
+            noaa.get(url[1] % (i, d['id']))
+            self.request_get_parse_item(noaa, d)
 
     def request_get(self):
         noaa = self.conn
@@ -107,27 +136,7 @@ class api(core.api):
         # import ipdb; ipdb.set_trace()
         for d in data:
             noaa.get(url[0] % d['id'])
-            table = noaa.last_response_soup.select('.class_table td')
-            d['delivered'] = (table[4].text is 'Order Delivered')
-            d['datetime'] = datetime.strptime(table[3].text,
-                                              '%Y-%m-%d %H:%M:%S')
-            d['format'] = ''
-            item = lambda i: i.text
-            items = map(item, noaa.last_response_soup.select('.zebra td a'))
-            d['files'] = []
-            for i in items:
-                noaa.get(url[1] % (i, d['id']))
-                head = noaa.last_response_soup.select('.class_table td')
-                area = [head[h].text for h in range(8, 12)]
-                d['format'] = head[1].text
-                coords = ['south', 'north', 'west', 'east']
-                for c in range(len(coords)):
-                    d[coords[c]] = float(area[c]) / 100
-                item = lambda row, i: row.select('td')[i].text
-                file_data = lambda row: (item(row, 3), int(item(row, 5)))
-                files = map(file_data,
-                            noaa.last_response_soup.select('.zebra tr')[1:])
-                d['files'].extend(files)
+            self.request_get_parse_order(url, noaa, d)
         return data
 
     def request_set(self, data):
