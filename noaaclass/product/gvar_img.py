@@ -82,9 +82,9 @@ class api(core.api):
                   if e['id'] not in [x['id'] for x in data]]
         new = [e for e in data if e['id'] is '+']
         edit = [e for e in data if e not in new and changed(e, old_data)]
-        [self.subscribe_new(e) for e in new]
-        [self.subscribe_edit(e) for e in edit]
-        [self.subscribe_remove(e) for e in remove]
+        list(map(lambda e: self.subscribe_new(e), new))
+        list(map(lambda e: self.subscribe_edit(e), edit))
+        list(map(lambda e: self.subscribe_remove(e), remove))
 
     def request_get(self):
         return {}
