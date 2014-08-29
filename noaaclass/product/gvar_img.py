@@ -1,5 +1,6 @@
 from noaaclass import core
 import re
+from datetime import datetime
 
 
 class api(core.api):
@@ -87,7 +88,47 @@ class api(core.api):
         list(map(lambda e: self.subscribe_remove(e), remove))
 
     def request_get(self):
-        return {}
+        noaa = self.conn
+        page = noaa.get('order_list')
+        forms = noaa.translator.get_forms(noaa.last_response_soup)
+        tmp = forms['o_form']
+        tmp['hours'] = ['100']
+        tmp['type'] = ['USER']
+        tmp['submit'] = ['Submit']
+        page = noaa.post('order_list', tmp, form_name='o_form')
+        data = page.select('.zebra td a')
+        data = [{'id': d.text}
+                for d in data if d.text.isdigit()]
+        url = [
+            'order_details?order=%s&hours=&status_page=1&group_size=25',
+            ('item_query?item=%s&order=%s&hours=&status_page=1&page=1'
+             '&group_size=25')
+            ]
+        # import ipdb; ipdb.set_trace()
+        for d in data:
+            noaa.get(url[0] % d['id'])
+            table = noaa.last_response_soup.select('.class_table td')
+            d['delivered'] = (table[4].text is 'Order Delivered')
+            d['datetime'] = datetime.strptime(table[3].text,
+                                              '%Y-%m-%d %H:%M:%S')
+            d['format'] = ''
+            item = lambda i: i.text
+            items = map(item, noaa.last_response_soup.select('.zebra td a'))
+            d['files'] = []
+            for i in items:
+                noaa.get(url[1] % (i, d['id']))
+                head = noaa.last_response_soup.select('.class_table td')
+                area = [head[h].text for h in range(8, 12)]
+                d['format'] = head[1].text
+                coords = ['south', 'north', 'west', 'east']
+                for c in range(len(coords)):
+                    d[coords[c]] = float(area[c]) / 100
+                item = lambda row, i: row.select('td')[i].text
+                file_data = lambda row: (item(row, 3), int(item(row, 5)))
+                files = map(file_data,
+                            noaa.last_response_soup.select('.zebra tr')[1:])
+                d['files'].extend(files)
+        return data
 
     def request_set(self, data):
         return {}
