@@ -45,7 +45,7 @@ class Auth(object):
 class Translator(object):
     def get_value(self, elements, show_value):
         for e in elements:
-            if 'name' in e.attrs.keys():
+            if 'name' in e.attrs:
                 yield (e.attrs['name'],
                        getattr(self, 'get_%s_value' % e.name)(e, show_value))
 
@@ -77,15 +77,20 @@ class Translator(object):
         return dict(map(resume, _aux.items()))
 
     def get_fields(self, form_soup, show_value):
-        elements = [e for e in self.get_value(
-            form_soup.find_all(name=['input', 'select']), show_value)]
+        parse = lambda frm, cls: [e for e in self.get_value(
+            frm.select(cls), show_value
+        )]
+        elements = parse(form_soup, 'input')
+        elements.extend(parse(form_soup, 'select'))
         result = self.tuple_to_dict(elements)
         return result
 
     def get_forms(self, html, list_options=False):
         forms = html.select('form')
-        result = [(f.attrs['name'], self.get_fields(f, not list_options))
-                  for f in forms if 'name' in f.attrs]
+        scrap_form = lambda f: (f.attrs['name'],
+                                self.get_fields(f, not list_options))
+        has_name = lambda f: 'name' in f.attrs
+        result = list(map(scrap_form, filter(has_name, forms)))
         return dict(result)
 
     def simplify(self, element):
@@ -101,6 +106,9 @@ class Translator(object):
                 yield (k, v)
 
     def fill_form(self, page, name, data):
+        if name == 'search_frm':
+            import ipdb
+            ipdb.set_trace()
         forms = self.get_forms(page)
         clear = lambda x: x is not ''
         form = {k: filter(clear, v) for k, v in
@@ -175,14 +183,30 @@ class Connection(object):
         return beautifulsoup(self.last_response.text)
 
     def get(self, url, proto='http'):
+        """
+        Load an url using the GET method.
+
+        Keyword arguments:
+        url -- the Universal Resource Location
+        proto -- the protocol (default 'http')
+        """
         self.last_response = self.session.get(proto + self.base_uri + url,
                                               headers=self.headers,
                                               cookies=self.cookies,
                                               allow_redirects=True,
-                                              timeout=20)
+                                              timeout=120)
         return self.last_response_soup
 
     def post(self, url, data, proto='http', form_name=None):
+        """
+        Load an url using the POST method.
+
+        Keyword arguments:
+        url -- the Universal Resource Location
+        data -- the form to be sent
+        proto -- the protocol (default 'http')
+        form_name -- the form name to search the default values
+        """
         form = self.translator.fill_form(self.last_response_soup,
                                          form_name if form_name else url, data)
         self.last_response = self.session.post(proto + self.base_uri + url,
@@ -190,7 +214,7 @@ class Connection(object):
                                                cookies=self.cookies,
                                                data=form,
                                                allow_redirects=True,
-                                               timeout=20)
+                                               timeout=120)
         return self.last_response_soup
 
 

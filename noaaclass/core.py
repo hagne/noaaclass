@@ -31,9 +31,9 @@ class api(object):
     def __init__(self, action):
         self.action = action
         self.keys = {'get': {}, 'set': {}}
-        self.register()
+        self.initialize()
 
-    def register(self):
+    def initialize(self):
         raise Exception('Unregistered API.')
 
     @property
