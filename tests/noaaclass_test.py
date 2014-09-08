@@ -8,6 +8,15 @@ class TestNoaaclass(unittest.TestCase):
     def setUp(self):
         self.noaa = noaaclass.connect('noaaclass.t', 'noaaclassadmin')
 
+    def test_last_response_setter(self):
+        # It should raise an exception if the response was wrong.
+        with self.assertRaisesRegexp(Exception, 'Connection error \(500\)'):
+            self.noaa.get('wrong_page')
+        # If the page was valid it should change the last_response value.
+        previous_response = self.noaa.last_response
+        self.noaa.get('welcome')
+        self.assertNotEquals(self.noaa.last_response, previous_response)
+
     def test_next_up_datetime(self):
         # Should return an UTC time between the start and the end.
         from pytz import utc
