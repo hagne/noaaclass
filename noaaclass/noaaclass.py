@@ -194,7 +194,7 @@ class Connection(object):
                                               headers=self.headers,
                                               cookies=self.cookies,
                                               allow_redirects=True,
-                                              timeout=120)
+                                              timeout=130)
         return self.last_response_soup
 
     def post(self, url, data, proto='http', form_name=None):
@@ -214,7 +214,7 @@ class Connection(object):
                                                cookies=self.cookies,
                                                data=form,
                                                allow_redirects=True,
-                                               timeout=120)
+                                               timeout=130)
         return self.last_response_soup
 
 
