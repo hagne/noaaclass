@@ -106,9 +106,6 @@ class Translator(object):
                 yield (k, v)
 
     def fill_form(self, page, name, data):
-        if name == 'search_frm':
-            import ipdb
-            ipdb.set_trace()
         forms = self.get_forms(page)
         clear = lambda x: x is not ''
         form = {k: filter(clear, v) for k, v in
@@ -194,7 +191,7 @@ class Connection(object):
                                               headers=self.headers,
                                               cookies=self.cookies,
                                               allow_redirects=True,
-                                              timeout=130)
+                                              timeout=120)
         return self.last_response_soup
 
     def post(self, url, data, proto='http', form_name=None):
@@ -214,7 +211,7 @@ class Connection(object):
                                                cookies=self.cookies,
                                                data=form,
                                                allow_redirects=True,
-                                               timeout=130)
+                                               timeout=120)
         return self.last_response_soup
 
 
