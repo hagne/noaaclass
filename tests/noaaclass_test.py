@@ -2,23 +2,38 @@ import unittest
 from noaaclass import noaaclass
 from noaaclass import core
 from datetime import datetime
+from requests.exceptions import ConnectionError
+import types
 
 
 class TestNoaaclass(unittest.TestCase):
     def setUp(self):
         self.noaa = noaaclass.connect('noaaclass.t', 'noaaclassadmin')
 
+    def test_load_home_page(self):
+        # Define the fake get method.
+
+        def fake_get(self, url, proto='http'):
+            if 'classlogin' in url:
+                raise ConnectionError('Forced error.')
+        # PATCHED: It replace temporally the get method.
+        self.noaa.get = types.MethodType(fake_get, self.noaa)
+        # Check if raise an Exception when can't load the main page.
+        with self.assertRaisesRegexp(Exception,
+                                     'NOAA CLASS is down until'):
+                self.noaa.authenticate.load_home_page(self.noaa)
+
     def test_last_response_setter(self):
-        # It should raise an exception if the response was wrong.
+        # Check if raise an exception if the response was wrong.
         with self.assertRaisesRegexp(Exception, 'Connection error \(500\)'):
             self.noaa.get('wrong_page')
-        # If the page was valid it should change the last_response value.
+        # Check if the page was valid it should change the last_response value.
         previous_response = self.noaa.last_response
         self.noaa.get('welcome')
         self.assertNotEquals(self.noaa.last_response, previous_response)
 
     def test_next_up_datetime(self):
-        # Should return an UTC time between the start and the end.
+        # Check if return an UTC time between the start and the end.
         from pytz import utc
         start = datetime.utcnow().replace(tzinfo=utc)
         time = noaaclass.next_up_datetime()
