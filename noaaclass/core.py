@@ -41,10 +41,6 @@ class api(object):
         return self.action.conn
 
     @property
-    def translator(self):
-        return self.conn.translator
-
-    @property
     def action_name(self):
         return self.action.__class__.__name__.lower()
 
@@ -65,17 +61,6 @@ class api(object):
         keys = self.keys['get'].keys()
         return {local(k): structure(k, e, adapter(k)) for k, e in post.items()
                 if k in keys}
-
-    def get_select(self, page, name):
-        options = page.select('form select[name=%s] option' % name)
-        return [o['value'] for o in options if 'selected' in o.attrs]
-
-    def get_checkbox(self, page, name):
-        return [i['value'] for i in page.select('form input[name~=%s]' % name)
-                if 'checked' in i.attrs]
-
-    def get_textbox(self, page, name):
-        return page.select('form input[name~%s]' % name)[0].attrs['value']
 
     def get(self):
         return getattr(self, '%s_get' % self.action_name)()
