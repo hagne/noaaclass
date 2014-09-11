@@ -85,14 +85,25 @@ class api(core.api):
     def subscribe_remove(self, e):
         self.conn.get('sub_delete?actionbox=%s' % e['id'])
 
-    def subscribe_set(self, data):
-        select = lambda i, data: [d for d in data if d['id'] == i][0]
-        changed = lambda x, data: x != select(x['id'], data)
+    def subscribe_classify(self, data):
+        select = lambda i, n, data: [d for d in data
+                                     if d['id'] == i or d['name'] == n]
+        changed = lambda x, d: x != select(x['id'], x['name'], d)[0]
         old_data = self.subscribe_get(append_orders=False)
-        remove = [e for e in old_data
-                  if e['id'] not in [x['id'] for x in data]]
-        new = [e for e in data if e['id'] is '+']
+        is_new = lambda e: (e['id'] is '+'
+                            and not select(e['id'], e['name'], old_data))
+        is_removed = lambda e: e['id'] not in [x['id'] for x in data]
+        need_id = lambda e: not e['id'].isdigit() and not is_new(e)
+        incomplete = [d for d in data if need_id(d)]
+        for d in incomplete:
+            d['id'] = select(d['id'], d['name'], old_data)[0]['id']
+        remove = [e for e in old_data if is_removed(e)]
+        new = [e for e in data if is_new(e)]
         edit = [e for e in data if e not in new and changed(e, old_data)]
+        return remove, new, edit
+
+    def subscribe_set(self, data):
+        remove, new, edit = self.subscribe_classify(data)
         list(map(self.subscribe_new, new))
         list(map(self.subscribe_edit, edit))
         list(map(self.subscribe_remove, remove))

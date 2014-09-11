@@ -38,8 +38,24 @@ class TestGvarimg(unittest.TestCase):
              'channel': [2],
              'format': 'NetCDF',
              },
+            {'id': '+',
+             'enabled': True,
+             'name': 'static',
+             'north': -26.73,
+             'south': -33.52,
+             'west': -61.06,
+             'east': -48.51,
+             'coverage': ['SH'],
+             'schedule': ['R'],
+             'satellite': ['G13'],
+             'channel': [1],
+             'format': 'NetCDF',
+             },
         ]
-        self.sub_data.extend(self.noaa.subscribe.gvar_img.get())
+        old_data = self.noaa.subscribe.gvar_img.get()
+        names = [d['name'] for d in self.sub_data]
+        self.sub_data.extend(filter(lambda x: x['name'] not in names,
+                                    old_data))
 
     def init_request_data(self):
         self.req_data = [
@@ -98,7 +114,7 @@ class TestGvarimg(unittest.TestCase):
     def test_subscribe_set_new_elements(self):
         self.gvar_img = self.noaa.subscribe.gvar_img
         copy = self.gvar_img.set(self.sub_data)
-        self.assertGreaterEqual(len(copy), 2)
+        self.assertGreaterEqual(len(copy), len(self.sub_data))
         [self.assertIn(k, copy[i].keys())
          for i in range(len(self.sub_data)) for k in self.sub_data[i].keys()]
         [self.assertEquals(copy[i][k], v)
