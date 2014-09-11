@@ -8,6 +8,6 @@ python:
 install:
   - "make deploy"
 # command to run tests
-script: "make test-coverage-travis-ci" #nosetests
+script: "travis_retry make test-coverage-travis-ci" #nosetests
 after_success:
   - "make test-coveralls"
