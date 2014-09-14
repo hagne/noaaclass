@@ -1,7 +1,19 @@
 from noaaclass import core
 import re
 from datetime import datetime, timedelta
-MAX_HOURS = '120'
+
+MAX_HOURS = '48'
+
+select = lambda i, n, data: [d for d in data if d['id'] == i or d['name'] == n]
+changed = lambda x, data: x != select(x['id'], x['name'], data)[0]
+is_new = lambda e, old_data: (e['id'] is '+'
+                              and not select(e['id'], e['name'], old_data))
+is_removed = lambda e, data: e['id'] not in [x['id'] for x in data]
+need_id = lambda e, old_data: not e['id'].isdigit() and not is_new(e, old_data)
+enabled = lambda x: re.match(r'.*%22(.*)%22.*', x).group(1) == 'Y'
+file_item = lambda row, i: row.select('td')[i].text
+file_data = lambda row: (file_item(row, 3), int(file_item(row, 5)),
+                         file_item(row, 4) == 'GVAR_IMG')
 
 
 class api(core.api):
@@ -35,11 +47,10 @@ class api(core.api):
         d['orders'] = self.obtain_items(noaa, item, is_item)
         self.parse_orders(noaa, d['orders'])
 
-    def subscribe_get(self, append_orders=True):
+    def subscribe_get(self, append_orders=False):
         noaa = self.conn
         page = noaa.get('subscriptions')
         data = page.select('.class_table td a')
-        enabled = lambda x: re.match(r'.*%22(.*)%22.*', x).group(1) == 'Y'
         data = [{'id': d.text, 'enabled': enabled(d['href'])}
                 for d in data if d.text.isdigit()]
         for d in data:
@@ -86,23 +97,16 @@ class api(core.api):
         self.conn.get('sub_delete?actionbox=%s' % e['id'])
 
     def subscribe_classify(self, data):
-        select = lambda i, n, data: [d for d in data
-                                     if d['id'] == i or d['name'] == n]
-        changed = lambda x, d: x != select(x['id'], x['name'], d)[0]
         old_data = self.subscribe_get(append_orders=False)
-        is_new = lambda e: (e['id'] is '+'
-                            and not select(e['id'], e['name'], old_data))
-        is_removed = lambda e: e['id'] not in [x['id'] for x in data]
-        need_id = lambda e: not e['id'].isdigit() and not is_new(e)
-        incomplete = [d for d in data if need_id(d)]
+        incomplete = [d for d in data if need_id(d, old_data)]
         for d in incomplete:
             d['id'] = select(d['id'], d['name'], old_data)[0]['id']
-        remove = [e for e in old_data if is_removed(e)]
-        new = [e for e in data if is_new(e)]
+        remove = [e for e in old_data if is_removed(e, data)]
+        new = [e for e in data if is_new(e, old_data)]
         edit = [e for e in data if e not in new and changed(e, old_data)]
         return remove, new, edit
 
-    def subscribe_set(self, data):
+    def subscribe_set(self, data, append_orders=False):
         remove, new, edit = self.subscribe_classify(data)
         list(map(self.subscribe_new, new))
         list(map(self.subscribe_edit, edit))
@@ -117,14 +121,9 @@ class api(core.api):
         head = noaa.last_response_soup.select('.class_table td')
         order['format'] = head[1].text
         self.parse_area(head, order)
-        file_item = lambda row, i: row.select('td')[i].text
-        file_data = lambda row: (file_item(row, 3),
-                                 int(file_item(row, 5)),
-                                 file_item(row, 4) == 'GVAR_IMG')
         files = map(file_data,
                     noaa.last_response_soup.select('.zebra tr')[1:])
-        files = filter(lambda x: x[2], files)
-        files = map(lambda x: (x[0], x[1]), files)
+        files = map(lambda x: (x[0], x[1]), filter(lambda x: x[2], files))
         order['files'].extend(files)
 
     def obtain_items(self, noaa, item_functor, check_functor):
@@ -149,7 +148,6 @@ class api(core.api):
             order['files']['ftp'].append(i)
 
     def parse_orders(self, noaa, orders):
-        # import ipdb; ipdb.set_trace()
         for order in orders:
             noaa.get('order_details?order=%s&hours=%s&status_page=1'
                      '&group_size=25' % (order['id'], MAX_HOURS))

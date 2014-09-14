@@ -62,9 +62,9 @@ class api(object):
         return {local(k): structure(k, e, adapter(k)) for k, e in post.items()
                 if k in keys}
 
-    def get(self):
-        return getattr(self, '%s_get' % self.action_name)()
+    def get(self, *args, **kwargs):
+        return getattr(self, '%s_get' % self.action_name)(*args, **kwargs)
 
-    def set(self, data):
-        getattr(self, '%s_set' % self.action_name)(data)
-        return self.get()
+    def set(self, *args, **kwargs):
+        getattr(self, '%s_set' % self.action_name)(*args, **kwargs)
+        return self.get(**kwargs)
