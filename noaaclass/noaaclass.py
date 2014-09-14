@@ -190,8 +190,7 @@ class Connection(object):
         self.last_response = self.session.get(proto + self.base_uri + url,
                                               headers=self.headers,
                                               cookies=self.cookies,
-                                              allow_redirects=True,
-                                              timeout=90)
+                                              allow_redirects=True)
         return self.last_response_soup
 
     def post(self, url, data, proto='http', form_name=None):
@@ -210,8 +209,7 @@ class Connection(object):
                                                headers=self.headers,
                                                cookies=self.cookies,
                                                data=form,
-                                               allow_redirects=True,
-                                               timeout=90)
+                                               allow_redirects=True)
         return self.last_response_soup
 
 
