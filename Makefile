@@ -40,7 +40,7 @@ test:
 
 shell:
 	@ $(SOURCE_ACTIVATE) ipython
-	@ echo "[ tested       ] the system was completly tested"
+	@ echo "[ shell        ] the system was loaded into an ipython shell"
 
 test-coverage-travis-ci:
 	@ $(SOURCE_ACTIVATE) coverage run --source='noaaclass/' tests/__main__.py
