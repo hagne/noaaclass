@@ -67,4 +67,9 @@ class api(object):
 
     def set(self, *args, **kwargs):
         getattr(self, '%s_set' % self.action_name)(*args, **kwargs)
-        return self.get(**kwargs)
+        local = args[0]
+        while True:
+            db = self.get(**kwargs)
+            if len(db) == len(local):
+                break
+        return db
