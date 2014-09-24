@@ -105,7 +105,8 @@ class TestGvarimg(unittest.TestCase):
     def test_subscribe_get(self):
         self.gvar_img = self.noaa.subscribe.gvar_img
         self.gvar_img.set(self.sub_data)
-        for subscription in self.gvar_img.get(append_orders=True):
+        for subscription in self.gvar_img.get(append_orders=True,
+                                              append_files=True):
             for key in ['id', 'enabled', 'name', 'coverage', 'schedule',
                         'south', 'north', 'west', 'east', 'satellite',
                         'format', 'orders']:

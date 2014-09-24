@@ -39,15 +39,15 @@ class api(core.api):
         self.translate(multiple, 'channel', int, 'chan_%s' % self.name, str)
         self.translate(single, 'format', direct, 'format_%s' % self.name, str)
 
-    def subscribe_get_append_orders(self, noaa, d):
+    def subscribe_get_append_orders(self, noaa, d, append_files):
         noaa.get('order_list?order=%s&type=SUBS&displayDetails=Y&hours=%s'
                  '&status_page=1&group_size=25' % (d['id'], MAX_HOURS))
         item = lambda i: {'id': str(i.text)}
         is_item = lambda i: i.text.isdigit()
         d['orders'] = self.obtain_items(noaa, item, is_item)
-        self.parse_orders(noaa, d['orders'])
+        self.parse_orders(noaa, d['orders'], append_files)
 
-    def subscribe_get(self, append_orders=False):
+    def subscribe_get(self, append_orders=False, append_files=False):
         noaa = self.conn
         page = noaa.get('subscriptions')
         data = page.select('.class_table td a')
@@ -64,7 +64,7 @@ class api(core.api):
             tmp = join(tmp, forms['sub_frm'])
             d.update(self.post_to_local(tmp))
             if append_orders:
-                self.subscribe_get_append_orders(noaa, d)
+                self.subscribe_get_append_orders(noaa, d, append_files)
         return data
 
     def subscribe_new(self, e):
@@ -114,23 +114,20 @@ class api(core.api):
 
     def parse_area(self, head, order):
         coords = ['south', 'north', 'west', 'east']
+        cast = lambda n, v: self.keys['get'][self.keys['set'][n][0]][1](v)
         for index in range(len(coords)):
-            order[coords[index]] = float(head[8+index].text) / 100
-
-    def parse_files(self, noaa, order):
-        head = noaa.last_response_soup.select('.class_table td')
-        order['format'] = head[1].text
-        self.parse_area(head, order)
-        files = map(file_data,
-                    noaa.last_response_soup.select('.zebra tr')[1:])
-        files = map(lambda x: (x[0], x[1]), filter(lambda x: x[2], files))
-        order['files'].extend(files)
+            name = coords[index]
+            value = head[8+index].text
+            order[name] = cast(name, value) / 100
 
     def obtain_items(self, noaa, item_functor, check_functor):
         anchors = noaa.last_response_soup.select('.zebra td a')
         return map(item_functor, filter(check_functor, anchors))
 
-    def parse_order(self, noaa, order):
+    def parse_order(self, order):
+        noaa = self.conn
+        noaa.get('order_details?order=%s&hours=%s&status_page=1'
+                 '&group_size=1000' % (order['id'], MAX_HOURS))
         table = noaa.last_response_soup.select('.class_table td')
         order['delivered'] = (table[4].text
                               in ['Order Delivered', 'Order Ready'])
@@ -139,19 +136,18 @@ class api(core.api):
         order['files'] = {'http': [], 'ftp': []}
         day_before_yesterday = datetime.utcnow() - timedelta(days=2)
         order['old'] = order['datetime'] < day_before_yesterday
+        if self.append_files:
         item = lambda i: i['href'].split("'")[1]
         is_http = lambda i: 'www' in i.text
         is_ftp = lambda i: 'ftp' in i.text
-        for i in self.obtain_items(noaa, item, is_http):
-            order['files']['http'].append(i)
-        for i in self.obtain_items(noaa, item, is_ftp):
-            order['files']['ftp'].append(i)
+            order['files']['http'].extend(
+                self.obtain_items(noaa, item, is_http))
+            order['files']['ftp'].extend(
+                self.obtain_items(noaa, item, is_ftp))
 
-    def parse_orders(self, noaa, orders):
-        for order in orders:
-            noaa.get('order_details?order=%s&hours=%s&status_page=1'
-                     '&group_size=25' % (order['id'], MAX_HOURS))
-            self.parse_order(noaa, order)
+    def parse_orders(self, noaa, orders, append_files):
+        self.append_files = append_files
+        list(map(self.parse_order, orders))
 
     def request_get(self):
         noaa = self.conn
