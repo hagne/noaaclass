@@ -150,19 +150,32 @@ class TestGvarimg(unittest.TestCase):
                         'south', 'north', 'west', 'east']:
                 self.assertIn(key, order.keys())
 
+    def assertEqualsRequests(self, obtained, original):
+        asymetric = lambda x: x not in ['coverage', 'end', 'start',
+                                        'satellite', 'schedule', 'id']
+        for k in filter(asymetric, original.keys()):
+            self.assertTrue(k in obtained.keys())
+            if isinstance(original[k], float):
+                self.assertEqual(int(obtained[k]), int(original[k]))
+            elif isinstance(original[k], datetime):
+                self.assertEqual(obtained[k].toordinal(),
+                                 original[k].toordinal())
+            else:
+                self.assertEquals(obtained[k], original[k])
+
     def test_request_set_new(self):
-        """self.gvar_img = self.noaa.request.gvar_img
-        copy = self.gvar_img.set(self.req_data)
-        self.assertEquals(len(copy), 2)
-        sort = sorted
-        [self.assertEquals(sort(copy[i].keys()), sort(self.req_data[i].keys()))
-         for i in range(len(self.req_data))]
-        [self.assertEquals(copy[i][k], v)
-         for i in range(len(self.req_data))
-         for k, v in self.req_data[i].items()
-         if k is not 'id']
-        """
-        pass
+        import sys
+        self.gvar_img = self.noaa.request.gvar_img
+        sys.stdout.write('Getting data from server db...')
+        sys.stdout.flush()
+        data = self.gvar_img.get()
+        data.extend(self.req_data)
+        sys.stdout.write('Setting data from server db...')
+        sys.stdout.flush()
+        copy = self.gvar_img.set(data)
+        self.assertEquals(len(copy), len(data))
+        [self.assertEqualsRequests(copy[i], data[i])
+         for i in range(len(data))]
 
 if __name__ == '__main__':
     unittest.main()

@@ -149,9 +149,9 @@ class api(core.api):
         order['old'] = order['datetime'] < day_before_yesterday
         self.parse_coords(noaa, order)
         if self.append_files:
-        item = lambda i: i['href'].split("'")[1]
-        is_http = lambda i: 'www' in i.text
-        is_ftp = lambda i: 'ftp' in i.text
+            item = lambda i: i['href'].split("'")[1]
+            is_http = lambda i: 'www' in i.text
+            is_ftp = lambda i: 'ftp' in i.text
             order['files']['http'].extend(
                 self.obtain_items(noaa, item, is_http))
             order['files']['ftp'].extend(
@@ -175,5 +175,40 @@ class api(core.api):
         data.sort(key=key)
         return data
 
+    def request_new(self, e):
+        noaa = self.conn
+        noaa.get('search?sub_id=0&datatype_family=%s&submit.x=23&submit.y=7' %
+                 self.name_upper)
+        data = self.local_to_post(e)
+        data['start_date'] = e['start'].strftime('%Y-%m-%d')
+        data['start_time'] = e['start'].strftime('%H:%M:%S')
+        data['end_date'] = e['end'].strftime('%Y-%m-%d')
+        data['end_time'] = e['end'].strftime('%H:%M:%S')
+        data['data_start'] = '1993-09-01'
+        data['data_end'] = datetime.utcnow().strftime('%Y-%m-%d')
+        data['dsname_pattern'] = "^GOES\d\d\.(19|20)\d\d\.[0123]\d\d(.{0,15})$"
+        data['between_through'] = 'T'
+        noaa.post('psearch%s' % self.name_upper, data=data,
+                  form_name='search_frm')
+        forms = noaa.translator.get_forms(noaa.last_response_soup)
+        tmp = forms['rform']
+        tmp['update_action'] = ['SelectAll']
+        noaa.post('results%s' % self.name, data=tmp, form_name='rform')
+        forms = noaa.translator.get_forms(noaa.last_response_soup)
+        noaa.get('shopping_cart')
+        forms = noaa.translator.get_forms(noaa.last_response_soup)
+        tmp = forms['shop']
+        trans = (lambda k, v, e: [e['format']]
+                 if 'format' in k else (e['channel'] if 'channel' in k else v))
+        tmp = {k: trans(k, v, e) for k, v in tmp.items()}
+        tmp['cocoon-action'] = ['PlaceOrder']
+        self.conn.post('shop', data=tmp, form_name='shop')
+        forms = noaa.translator.get_forms(noaa.last_response_soup)
+        tmp = forms['FORM1']
+        tmp['purpose'] = ['education']
+        tmp['postSurvey'] = ['Submit']
+        self.conn.post('survey', data=tmp, form_name='FORM1')
+
     def request_set(self, data):
-        return {}
+        new = [e for e in data if e['id'] is '+']
+        list(map(self.request_new, new))
