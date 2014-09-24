@@ -124,6 +124,17 @@ class api(core.api):
         anchors = noaa.last_response_soup.select('.zebra td a')
         return map(item_functor, filter(check_functor, anchors))
 
+    def parse_coords(self, noaa, order):
+        url = noaa.last_response_soup.select('.zebra td a')[0].attrs['href']
+        noaa.get(url)
+        head = noaa.last_response_soup.select('.class_table td')
+        self.parse_area(head, order)
+        other = {
+            'format': head[1].text,
+            'channel': range(int(head[12].text), int(head[13].text)+1),
+        }
+        order.update(other)
+
     def parse_order(self, order):
         noaa = self.conn
         noaa.get('order_details?order=%s&hours=%s&status_page=1'
@@ -136,6 +147,7 @@ class api(core.api):
         order['files'] = {'http': [], 'ftp': []}
         day_before_yesterday = datetime.utcnow() - timedelta(days=2)
         order['old'] = order['datetime'] < day_before_yesterday
+        self.parse_coords(noaa, order)
         if self.append_files:
         item = lambda i: i['href'].split("'")[1]
         is_http = lambda i: 'www' in i.text
@@ -149,20 +161,17 @@ class api(core.api):
         self.append_files = append_files
         list(map(self.parse_order, orders))
 
-    def request_get(self):
+    def request_get(self, append_files=False):
         noaa = self.conn
-        page = noaa.get('order_list')
-        forms = noaa.translator.get_forms(noaa.last_response_soup)
-        tmp = forms['o_form']
-        tmp['hours'] = [MAX_HOURS]
-        tmp['type'] = ['USER']
-        tmp['submit'] = ['Submit']
-        page = noaa.post('order_list', tmp, form_name='o_form')
+        page = noaa.get('order_list?order=&status=&type=USER'
+                        '&displayDetails=N&hours=%s&status_page=1'
+                        '&large_status=&group_size=1000&orderby=0' %
+                        (MAX_HOURS))
         data = page.select('.zebra td a')
         data = [{'id': d.text}
                 for d in data if d.text.isdigit()]
-        self.parse_orders(noaa, data)
-        key = lambda x: x['start']
+        self.parse_orders(noaa, data, append_files)
+        key = lambda x: x['start'] if 'start' in x else ''
         data.sort(key=key)
         return data
 
