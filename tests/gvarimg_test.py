@@ -170,7 +170,7 @@ class TestGvarimg(unittest.TestCase):
         sys.stdout.flush()
         data = self.gvar_img.get()
         data.extend(self.req_data)
-        sys.stdout.write('Setting data from server db...')
+        sys.stdout.write('Setting data to server db...')
         sys.stdout.flush()
         copy = self.gvar_img.set(data)
         self.assertEquals(len(copy), len(data))

@@ -1,4 +1,5 @@
 import requests
+import grequests
 from requests.exceptions import ConnectionError
 from bs4 import BeautifulSoup as beautifulsoup
 import re
@@ -177,7 +178,7 @@ class Connection(object):
 
     @property
     def last_response_soup(self):
-        return beautifulsoup(self.last_response.text)
+        return self.pack(self.last_response)
 
     def get(self, url, proto='http'):
         """
@@ -192,6 +193,25 @@ class Connection(object):
                                               cookies=self.cookies,
                                               allow_redirects=True)
         return self.last_response_soup
+
+    def pack(self, response):
+        soup = beautifulsoup(response.text)
+        response.close()
+        return soup
+
+    def getasync(self, urls, proto='http'):
+        result = []
+        if len(urls) > 0:
+            reqs = (grequests.get(proto + self.base_uri + u,
+                                  headers=self.headers,
+                                  session=self.session,
+                                  cookies=self.cookies,
+                                  timeout=120,
+                                  allow_redirects=True)
+                    for u in urls)
+            result = grequests.map(reqs)
+            result = filter(lambda x: x is not None, result)
+        return list(map(self.pack, result))
 
     def post(self, url, data, proto='http', form_name=None):
         """
