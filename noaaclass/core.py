@@ -1,3 +1,6 @@
+import time
+
+
 class Action(object):
     def __init__(self, conn):
         self.conn = conn
@@ -72,4 +75,5 @@ class api(object):
             db = self.get(**kwargs)
             if len(db) == len(local):
                 break
+            time.sleep(0.2)
         return db

@@ -69,8 +69,8 @@ class TestGvarimg(unittest.TestCase):
              'satellite': ['G13'],
              'channel': [1],
              'format': 'NetCDF',
-             'start': datetime(2014, 9, 16, 0, 0, 0),
-             'end': datetime(2014, 9, 16, 23, 59, 59)
+             'start': datetime(2014, 9, 16, 10, 0, 0),
+             'end': datetime(2014, 9, 16, 17, 59, 59)
              },
             {'id': '+',
              'north': -26.73,
@@ -82,8 +82,8 @@ class TestGvarimg(unittest.TestCase):
              'satellite': ['G13'],
              'channel': [2],
              'format': 'NetCDF',
-             'start': datetime(2014, 9, 2, 0, 0, 0),
-             'end': datetime(2014, 9, 3, 23, 59, 59)
+             'start': datetime(2014, 9, 2, 10, 0, 0),
+             'end': datetime(2014, 9, 3, 17, 59, 59)
              },
         ]
 
