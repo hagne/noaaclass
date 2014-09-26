@@ -2,8 +2,6 @@ from noaaclass import core
 import re
 from datetime import datetime, timedelta
 
-MAX_HOURS = '48'
-
 select = lambda i, n, data: [d for d in data if d['id'] == i or d['name'] == n]
 changed = lambda x, data: x != select(x['id'], x['name'], data)[0]
 is_new = lambda e, old_data: (e['id'] is '+'
@@ -39,15 +37,15 @@ class api(core.api):
         self.translate(multiple, 'channel', int, 'chan_%s' % self.name, str)
         self.translate(single, 'format', direct, 'format_%s' % self.name, str)
 
-    def subscribe_get_append_orders(self, noaa, d, append_files):
-        noaa.get('order_list?order=%s&type=SUBS&displayDetails=Y&hours=%s'
-                 '&status_page=1&group_size=25' % (d['id'], MAX_HOURS))
+    def subscribe_get_append_orders(self, noaa, d, append_files, hours):
+        noaa.get('order_list?order=%s&type=SUBS&displayDetails=Y&hours=%i'
+                 '&status_page=1&group_size=25' % (d['id'], hours))
         item = lambda i: {'id': str(i.text)}
         is_item = lambda i: i.text.isdigit()
         d['orders'] = self.obtain_items(noaa.last_response_soup, item, is_item)
-        self.parse_orders(noaa, d['orders'], append_files)
+        self.parse_orders(noaa, d['orders'], append_files, hours)
 
-    def subscribe_get(self, append_orders=False, append_files=False):
+    def subscribe_get(self, append_orders=False, append_files=False, hours=1):
         noaa = self.conn
         page = noaa.get('subscriptions')
         data = page.select('.class_table td a')
@@ -64,7 +62,7 @@ class api(core.api):
             tmp = join(tmp, forms['sub_frm'])
             d.update(self.post_to_local(tmp))
             if append_orders:
-                self.subscribe_get_append_orders(noaa, d, append_files)
+                self.subscribe_get_append_orders(noaa, d, append_files, hours)
         return data
 
     def subscribe_new(self, e):
@@ -154,25 +152,25 @@ class api(core.api):
             order['files']['ftp'].extend(
                 self.obtain_items(last_response_soup, item, is_ftp))
 
-    def parse_orders(self, noaa, orders, append_files):
+    def parse_orders(self, noaa, orders, append_files, hours):
         self.append_files = append_files
-        urls = [('order_details?order=%s&hours=%s&status_page=1'
-                 '&group_size=1000' % (order['id'], MAX_HOURS))
+        urls = [('order_details?order=%s&hours=%i&status_page=1'
+                 '&group_size=1000' % (order['id'], hours))
                 for order in orders]
         responses = noaa.getasync(urls)
         list(map(lambda a, noaa=noaa: self.parse_order(noaa, a[0], a[1]),
                  zip(orders, responses)))
 
-    def request_get(self, append_files=False):
+    def request_get(self, append_files=False, hours=1):
         noaa = self.conn
         page = noaa.get('order_list?order=&status=&type=USER'
-                        '&displayDetails=N&hours=%s&status_page=1'
+                        '&displayDetails=N&hours=%i&status_page=1'
                         '&large_status=&group_size=1000&orderby=0' %
-                        (MAX_HOURS))
+                        (hours))
         data = page.select('.zebra td a')
         data = [{'id': d.text}
                 for d in data if d.text.isdigit()]
-        self.parse_orders(noaa, data, append_files)
+        self.parse_orders(noaa, data, append_files, hours)
         key = lambda x: x['start'] if 'start' in x else ''
         data.sort(key=key)
         return data
