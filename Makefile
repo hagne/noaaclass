@@ -12,7 +12,7 @@ unattended:
 	@ (sudo ls 2>&1) >> tracking.log
 
 ubuntu:
-	@ (sudo apt-get -y install zlibc curl libssl0.9.8 libbz2-dev libxslt*-dev libxml*-dev 2>&1) >> tracking.log
+	@ (sudo apt-get -y install zlibc curl libssl0.9.8 libbz2-dev libxslt*-dev libxml*-dev python-gevent 2>&1) >> tracking.log
 	@ echo "[ assume       ] ubuntu distribution"
 
 bin/activate: requirements.txt
