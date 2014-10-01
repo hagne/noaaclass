@@ -157,7 +157,7 @@ class api(core.api):
         urls = [('order_details?order=%s&hours=%i&status_page=1'
                  '&group_size=1000' % (order['id'], hours))
                 for order in orders]
-        responses = noaa.getasync(urls)
+        responses = noaa.getmultiple(urls)
         list(map(lambda a, noaa=noaa: self.parse_order(noaa, a[0], a[1]),
                  zip(orders, responses)))
 

@@ -194,24 +194,36 @@ class Connection(object):
                                               allow_redirects=True)
         return self.last_response_soup
 
-    def pack(self, response):
+    def pack(self, response, async=False):
         soup = beautifulsoup(response.text)
-        response.close()
+        if async:
+            response.close()
         return soup
 
-    def getasync(self, urls, proto='http'):
+    def getmultipleasync(self, urls, proto='http'):
+        reqs = (grequests.get(proto + self.base_uri + u,
+                              headers=self.headers,
+                              session=self.session,
+                              cookies=self.cookies,
+                              timeout=120,
+                              allow_redirects=True)
+                for u in urls)
+        return grequests.map(reqs)
+
+    def getmultiplesync(self, urls, proto='http'):
+        result = []
+        for u in urls:
+            self.get(u, proto)
+            result.append(self.last_response)
+        return result
+
+    def getmultiple(self, urls, proto='http', async=False):
         result = []
         if len(urls) > 0:
-            reqs = (grequests.get(proto + self.base_uri + u,
-                                  headers=self.headers,
-                                  session=self.session,
-                                  cookies=self.cookies,
-                                  timeout=120,
-                                  allow_redirects=True)
-                    for u in urls)
-            result = grequests.map(reqs)
+            fx = self.getmultipleasync if async else self.getmultiplesync
+            result = fx(urls, proto)
             result = filter(lambda x: x is not None, result)
-        return list(map(self.pack, result))
+        return list(map(lambda r, a=async: self.pack(r, a), result))
 
     def post(self, url, data, proto='http', form_name=None):
         """
