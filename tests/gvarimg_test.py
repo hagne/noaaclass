@@ -1,6 +1,7 @@
 import unittest
 from noaaclass import noaaclass
 from datetime import datetime
+import time
 
 
 class TestGvarimg(unittest.TestCase):
@@ -143,7 +144,8 @@ class TestGvarimg(unittest.TestCase):
         self.gvar_img.set(copy)
         self.assertEquals(self.gvar_img.get(), copy)
 
-    def no_test_request_get(self):
+    def test_request_get(self):
+        time.sleep(40)
         self.gvar_img = self.noaa.request.gvar_img
         for order in self.gvar_img.get():
             for key in ['id', 'delivered', 'datetime', 'format', 'files',
@@ -163,15 +165,11 @@ class TestGvarimg(unittest.TestCase):
             else:
                 self.assertEquals(obtained[k], original[k])
 
-    def no_test_request_set_new(self):
-        import sys
+    def test_request_set_new(self):
+        time.sleep(40)
         self.gvar_img = self.noaa.request.gvar_img
-        sys.stdout.write('Getting data from server db...')
-        sys.stdout.flush()
         data = self.gvar_img.get()
         data.extend(self.req_data)
-        sys.stdout.write('Setting data to server db...')
-        sys.stdout.flush()
         copy = self.gvar_img.set(data)
         self.assertEquals(len(copy), len(data))
         [self.assertEqualsRequests(copy[i], data[i])
