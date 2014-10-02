@@ -37,15 +37,16 @@ class api(core.api):
         self.translate(multiple, 'channel', int, 'chan_%s' % self.name, str)
         self.translate(single, 'format', direct, 'format_%s' % self.name, str)
 
-    def subscribe_get_append_orders(self, noaa, d, append_files, hours):
+    def subscribe_get_append_orders(self, noaa, d, append_files, hours, async):
         noaa.get('order_list?order=%s&type=SUBS&displayDetails=Y&hours=%i'
                  '&status_page=1&group_size=25' % (d['id'], hours))
         item = lambda i: {'id': str(i.text)}
         is_item = lambda i: i.text.isdigit()
         d['orders'] = self.obtain_items(noaa.last_response_soup, item, is_item)
-        self.parse_orders(noaa, d['orders'], append_files, hours)
+        self.parse_orders(noaa, d['orders'], append_files, hours, async)
 
-    def subscribe_get(self, append_orders=False, append_files=False, hours=1):
+    def subscribe_get(self, append_orders=False, append_files=False, hours=1,
+                      async=False):
         noaa = self.conn
         page = noaa.get('subscriptions')
         data = page.select('.class_table td a')
@@ -62,7 +63,8 @@ class api(core.api):
             tmp = join(tmp, forms['sub_frm'])
             d.update(self.post_to_local(tmp))
             if append_orders:
-                self.subscribe_get_append_orders(noaa, d, append_files, hours)
+                self.subscribe_get_append_orders(noaa, d, append_files,
+                                                 hours, async)
         return data
 
     def subscribe_new(self, e):
@@ -94,8 +96,8 @@ class api(core.api):
     def subscribe_remove(self, e):
         self.conn.get('sub_delete?actionbox=%s' % e['id'])
 
-    def subscribe_classify(self, data):
-        old_data = self.subscribe_get(append_orders=False)
+    def subscribe_classify(self, data, async):
+        old_data = self.subscribe_get(append_orders=False, async=async)
         incomplete = [d for d in data if need_id(d, old_data)]
         for d in incomplete:
             d['id'] = select(d['id'], d['name'], old_data)[0]['id']
@@ -104,8 +106,8 @@ class api(core.api):
         edit = [e for e in data if e not in new and changed(e, old_data)]
         return remove, new, edit
 
-    def subscribe_set(self, data, append_orders=False):
-        remove, new, edit = self.subscribe_classify(data)
+    def subscribe_set(self, data, append_orders=False, async=False):
+        remove, new, edit = self.subscribe_classify(data, async)
         list(map(self.subscribe_new, new))
         list(map(self.subscribe_edit, edit))
         list(map(self.subscribe_remove, remove))
@@ -152,16 +154,16 @@ class api(core.api):
             order['files']['ftp'].extend(
                 self.obtain_items(last_response_soup, item, is_ftp))
 
-    def parse_orders(self, noaa, orders, append_files, hours):
+    def parse_orders(self, noaa, orders, append_files, hours, async):
         self.append_files = append_files
         urls = [('order_details?order=%s&hours=%i&status_page=1'
                  '&group_size=1000' % (order['id'], hours))
                 for order in orders]
-        responses = noaa.getmultiple(urls)
+        responses = noaa.getmultiple(urls, async=async)
         list(map(lambda a, noaa=noaa: self.parse_order(noaa, a[0], a[1]),
                  zip(orders, responses)))
 
-    def request_get(self, append_files=False, hours=1):
+    def request_get(self, append_files=False, hours=1, async=False):
         noaa = self.conn
         page = noaa.get('order_list?order=&status=&type=USER'
                         '&displayDetails=N&hours=%i&status_page=1'
@@ -170,7 +172,7 @@ class api(core.api):
         data = page.select('.zebra td a')
         data = [{'id': d.text}
                 for d in data if d.text.isdigit()]
-        self.parse_orders(noaa, data, append_files, hours)
+        self.parse_orders(noaa, data, append_files, hours, async)
         key = lambda x: x['start'] if 'start' in x else ''
         data.sort(key=key)
         return data
