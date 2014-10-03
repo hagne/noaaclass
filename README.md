@@ -98,7 +98,53 @@ data.pop(0)
 data = noaa.subscribe.gvar_img.set(data)
 ```
 
-Last, you can get the next datetime (in UTC format) in which the website is going to be running:
+In the other hand, if you want an historic data raise a **request**:
+
+```python
+data = [
+    {
+        'id': '+',
+        'north': -26.72,
+        'south': -43.59,
+        'west': -71.02,
+        'east': -48.52,
+        'coverage': ['SH'],
+        'schedule': ['R'],
+        'satellite': ['G13'],
+        'channel': [1],
+        'format': 'NetCDF',
+        'start': datetime(2014, 9, 16, 10, 0, 0),
+        'end': datetime(2014, 9, 16, 17, 59, 59)
+    },
+    {
+        'id': '+',
+        'north': -26.73,
+        'south': -43.52,
+        'west': -71.06,
+        'east': -48.51,
+        'coverage': ['SH'],
+        'schedule': ['R'],
+        'satellite': ['G13'],
+        'channel': [2],
+        'format': 'NetCDF',
+        'start': datetime(2014, 9, 2, 10, 0, 0),
+        'end': datetime(2014, 9, 3, 17, 59, 59)
+    },
+]
+from noaaclass import noaaclass
+noaa = noaaclass.connect('username', 'password')
+data = noaa.request.gvar_img.set(data, async=True)
+```
+
+And, if you want to retrieve the requests made in the last 2 hours:
+
+```python
+from noaaclass import noaaclass
+noaa = noaaclass.connect('username', 'password')
+data = noaa.request.gvar_img.get(async=True, hours = 2, append_files=True)
+```
+
+Last, when the site is down you can get the next datetime (in UTC format) in which the website is going to be running:
 
 ```python
 from noaaclass import noaaclass
