@@ -164,7 +164,7 @@ class TestGvarimg(unittest.TestCase):
             else:
                 self.assertEquals(obtained[k], original[k])
 
-    def test_request_set_new(self):
+    def no_test_request_set_new(self):
         time.sleep(40)
         self.gvar_img = self.noaa.request.gvar_img
         data = self.gvar_img.get()
