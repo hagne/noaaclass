@@ -145,7 +145,6 @@ class TestGvarimg(unittest.TestCase):
         self.assertEquals(self.gvar_img.get(), copy)
 
     def test_request_get(self):
-        time.sleep(40)
         self.gvar_img = self.noaa.request.gvar_img
         for order in self.gvar_img.get():
             for key in ['id', 'delivered', 'datetime', 'format', 'files',
@@ -174,6 +173,7 @@ class TestGvarimg(unittest.TestCase):
         self.assertEquals(len(copy), len(data))
         [self.assertEqualsRequests(copy[i], data[i])
          for i in range(len(data))]
+        time.sleep(40)
 
 if __name__ == '__main__':
     unittest.main()

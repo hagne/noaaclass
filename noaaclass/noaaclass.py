@@ -205,7 +205,6 @@ class Connection(object):
                               headers=self.headers,
                               session=self.session,
                               cookies=self.cookies,
-                              timeout=120,
                               allow_redirects=True)
                 for u in urls)
         return grequests.map(reqs)
