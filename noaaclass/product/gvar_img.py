@@ -47,6 +47,8 @@ class api(core.api):
 
     def subscribe_get(self, append_orders=False, append_files=False, hours=1,
                       async=False):
+        # If append_files also automatically should append_orders.
+        append_orders = append_files or append_orders
         noaa = self.conn
         page = noaa.get('subscriptions')
         data = page.select('.class_table td a')
@@ -135,7 +137,7 @@ class api(core.api):
         }
         order.update(other)
 
-    def parse_order(self, noaa, order, last_response_soup):
+    def parse_order(self, noaa, order, last_response_soup, append_files):
         table = last_response_soup.select('.class_table td')
         order['delivered'] = (table[4].text
                               in ['Order Delivered', 'Order Ready'])
@@ -145,7 +147,7 @@ class api(core.api):
         day_before_yesterday = datetime.utcnow() - timedelta(days=2)
         order['old'] = order['datetime'] < day_before_yesterday
         self.parse_head(noaa, order, last_response_soup)
-        if self.append_files:
+        if append_files:
             item = lambda i: i['href'].split("'")[1]
             is_http = lambda i: 'www' in i.text
             is_ftp = lambda i: 'ftp' in i.text
@@ -155,12 +157,12 @@ class api(core.api):
                 self.obtain_items(last_response_soup, item, is_ftp))
 
     def parse_orders(self, noaa, orders, append_files, hours, async):
-        self.append_files = append_files
         urls = [('order_details?order=%s&hours=%i&status_page=1'
                  '&group_size=1000' % (order['id'], hours))
                 for order in orders]
         responses = noaa.getmultiple(urls, async=async)
-        list(map(lambda a, noaa=noaa: self.parse_order(noaa, a[0], a[1]),
+        list(map(lambda a, noaa=noaa, append_files=append_files:
+                 self.parse_order(noaa, a[0], a[1], append_files),
                  zip(orders, responses)))
 
     def request_get(self, append_files=False, hours=1, async=False):
