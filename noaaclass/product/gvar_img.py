@@ -39,7 +39,7 @@ class api(core.api):
 
     def subscribe_get_append_orders(self, noaa, d, append_files, hours, async):
         noaa.get('order_list?order=%s&type=SUBS&displayDetails=Y&hours=%i'
-                 '&status_page=1&group_size=25' % (d['id'], hours))
+                 '&status_page=1&group_size=25&orderby=1' % (d['id'], hours))
         item = lambda i: {'id': str(i.text)}
         is_item = lambda i: i.text.isdigit()
         d['orders'] = self.obtain_items(noaa.last_response_soup, item, is_item)
@@ -167,7 +167,7 @@ class api(core.api):
         noaa = self.conn
         page = noaa.get('order_list?order=&status=&type=USER'
                         '&displayDetails=N&hours=%i&status_page=1'
-                        '&large_status=&group_size=1000&orderby=0' %
+                        '&large_status=&group_size=1000&orderby=1' %
                         (hours))
         data = page.select('.zebra td a')
         data = [{'id': d.text}
