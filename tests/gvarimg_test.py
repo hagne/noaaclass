@@ -98,23 +98,24 @@ class TestGvarimg(unittest.TestCase):
         self.remove_all_in_server()
 
     def test_subscribe_get_empty(self):
-        self.gvar_img = self.noaa.subscribe.gvar_img
+        gvar_img = self.noaa.subscribe.gvar_img
         auto = lambda x: '[auto]' in x['name']
-        data = filter(auto, self.gvar_img.get())
+        data = filter(auto, gvar_img.get())
         self.assertEquals(data, [])
 
     def test_subscribe_get(self):
-        self.gvar_img = self.noaa.subscribe.gvar_img
-        self.gvar_img.set(self.sub_data)
-        for subscription in self.gvar_img.get(append_files=True):
+        gvar_img = self.noaa.subscribe.gvar_img
+        gvar_img.set(self.sub_data)
+        data = gvar_img.get(append_files=True)
+        for subscription in data:
             for key in ['id', 'enabled', 'name', 'coverage', 'schedule',
                         'south', 'north', 'west', 'east', 'satellite',
                         'format', 'orders']:
                 self.assertIn(key, subscription.keys())
 
     def test_subscribe_set_new_elements(self):
-        self.gvar_img = self.noaa.subscribe.gvar_img
-        copy = self.gvar_img.set(self.sub_data)
+        gvar_img = self.noaa.subscribe.gvar_img
+        copy = gvar_img.set(self.sub_data)
         self.assertGreaterEqual(len(copy), len(self.sub_data))
         [self.assertIn(k, copy[i].keys())
          for i in range(len(self.sub_data)) for k in self.sub_data[i].keys()]
@@ -124,28 +125,28 @@ class TestGvarimg(unittest.TestCase):
          if k is not 'id']
 
     def test_subscribe_set_edit_elements(self):
-        self.gvar_img = self.noaa.subscribe.gvar_img
-        copy = self.gvar_img.set(self.sub_data)
+        gvar_img = self.noaa.subscribe.gvar_img
+        copy = gvar_img.set(self.sub_data)
         self.assertGreaterEqual(len(copy), 2)
         copy[0]['name'] = '[auto] name changed'
         copy[1]['channel'] = [4, 5]
-        self.gvar_img.set(copy)
-        edited = self.gvar_img.get()
+        gvar_img.set(copy)
+        edited = gvar_img.get()
         self.assertEquals(edited[0]['name'], copy[0]['name'])
         self.assertEquals(edited[1]['channel'], copy[1]['channel'])
 
     def test_subscribe_set_remove_element(self):
-        self.gvar_img = self.noaa.subscribe.gvar_img
-        copy = self.gvar_img.set(self.sub_data, async=True)
-        self.assertEquals(self.gvar_img.get(), copy)
+        gvar_img = self.noaa.subscribe.gvar_img
+        copy = gvar_img.set(self.sub_data, async=True)
+        self.assertEquals(gvar_img.get(), copy)
         criteria = lambda x: 'sample1' not in x['name']
         copy = filter(criteria, copy)
-        self.gvar_img.set(copy)
-        self.assertEquals(self.gvar_img.get(), copy)
+        gvar_img.set(copy)
+        self.assertEquals(gvar_img.get(), copy)
 
     def test_request_get(self):
-        self.gvar_img = self.noaa.request.gvar_img
-        for order in self.gvar_img.get():
+        gvar_img = self.noaa.request.gvar_img
+        for order in gvar_img.get():
             for key in ['id', 'delivered', 'datetime', 'format', 'files',
                         'south', 'north', 'west', 'east']:
                 self.assertIn(key, order.keys())
@@ -165,10 +166,10 @@ class TestGvarimg(unittest.TestCase):
 
     def no_test_request_set_new(self):
         time.sleep(40)
-        self.gvar_img = self.noaa.request.gvar_img
-        data = self.gvar_img.get(async=True)
+        gvar_img = self.noaa.request.gvar_img
+        data = gvar_img.get(async=True)
         data.extend(self.req_data)
-        copy = self.gvar_img.set(data, async=True)
+        copy = gvar_img.set(data, async=True)
         self.assertEquals(len(copy), len(data))
         [self.assertEqualsRequests(copy[i], data[i])
          for i in range(len(data))]
