@@ -9,9 +9,21 @@ is_new = lambda e, old_data: (e['id'] is '+'
 is_removed = lambda e, data: e['id'] not in [x['id'] for x in data]
 need_id = lambda e, old_data: not e['id'].isdigit() and not is_new(e, old_data)
 enabled = lambda x: re.match(r'.*%22(.*)%22.*', x).group(1) == 'Y'
-file_item = lambda row, i: row.select('td')[i].text
+element = lambda t, ptrn, idx: t.select(ptrn)[idx].text
+file_item = lambda row, i: element(row, 'td', i)
 file_data = lambda row: (file_item(row, 3), int(file_item(row, 5)),
                          file_item(row, 4) == 'GVAR_IMG')
+resume_id = lambda t: element(t, 'td a', 0)
+resume_activity = lambda t: datetime.strptime(
+    element(t, 'td', -1).split('.')[0], '%Y-%m-%d %H:%M:%S')
+resume_status = lambda t: element(t, 'td', -3).lower()
+resume_size = lambda t: int(element(t, 'td', -4))
+resume_order = lambda t: {
+    'id': resume_id(t),
+    'last_activity': resume_activity(t),
+    'status': resume_status(t),
+    'size': resume_size(t),
+}
 
 
 class api(core.api):
@@ -38,11 +50,10 @@ class api(core.api):
         self.translate(single, 'format', direct, 'format_%s' % self.name, str)
 
     def subscribe_get_append_orders(self, noaa, d, append_files, hours, async):
-        noaa.get('order_list?order=%s&type=SUBS&displayDetails=Y&hours=%i'
-                 '&status_page=1&group_size=25&orderby=1' % (d['id'], hours))
-        item = lambda i: {'id': str(i.text)}
-        is_item = lambda i: i.text.isdigit()
-        d['orders'] = self.obtain_items(noaa.last_response_soup, item, is_item)
+        page = noaa.get('order_list?order=%s&type=SUBS&displayDetails=Y'
+                        '&hours=%i&status_page=1&group_size=25&orderby=1' %
+                        (d['id'], hours))
+        d['orders'] = self.initialize_orders(page)
         self.parse_orders(noaa, d['orders'], append_files, hours, async)
 
     def subscribe_get(self, append_orders=False, append_files=False, hours=1,
@@ -139,8 +150,6 @@ class api(core.api):
 
     def parse_order(self, noaa, order, last_response_soup, append_files):
         table = last_response_soup.select('.class_table td')
-        order['delivered'] = (table[4].text
-                              in ['Order Delivered', 'Order Ready'])
         order['datetime'] = datetime.strptime(table[3].text,
                                               '%Y-%m-%d %H:%M:%S')
         order['files'] = {'http': [], 'ftp': []}
@@ -158,12 +167,19 @@ class api(core.api):
 
     def parse_orders(self, noaa, orders, append_files, hours, async):
         urls = [('order_details?order=%s&hours=%i&status_page=1'
-                 '&group_size=1000' % (order['id'], hours))
+                 '&group_size=1000&orderby=1' % (order['id'], hours))
                 for order in orders]
         responses = noaa.getmultiple(urls, async=async)
         list(map(lambda a, noaa=noaa, append_files=append_files:
                  self.parse_order(noaa, a[0], a[1], append_files),
                  zip(orders, responses)))
+
+    def initialize_orders(self, page):
+        # Filter old or unused data
+        data = page.select('.zebra tr')
+        data = filter(lambda t: len(t.select('td')) > 0, data)
+        return filter(lambda o: o['status'] != 'delivered',
+                      map(resume_order, data))
 
     def request_get(self, append_files=False, hours=1, async=False):
         noaa = self.conn
@@ -171,13 +187,11 @@ class api(core.api):
                         '&displayDetails=N&hours=%i&status_page=1'
                         '&large_status=&group_size=1000&orderby=1' %
                         (hours))
-        data = page.select('.zebra td a')
-        data = [{'id': d.text}
-                for d in data if d.text.isdigit()]
-        self.parse_orders(noaa, data, append_files, hours, async)
+        orders = self.initialize_orders(page)
+        self.parse_orders(noaa, orders, append_files, hours, async)
         key = lambda x: x['start'] if 'start' in x else ''
-        data.sort(key=key)
-        return data
+        orders.sort(key=key)
+        return orders
 
     def request_new(self, e):
         noaa = self.conn

@@ -112,6 +112,10 @@ class TestGvarimg(unittest.TestCase):
                         'south', 'north', 'west', 'east', 'satellite',
                         'format', 'orders']:
                 self.assertIn(key, subscription.keys())
+            for order in subscription['orders']:
+                for key in ['id', 'last_activity', 'status', 'size', 'files',
+                            'datetime']:
+                    self.assertIn(key, order.keys())
 
     def test_subscribe_set_new_elements(self):
         gvar_img = self.noaa.subscribe.gvar_img
