@@ -189,7 +189,7 @@ class api(core.api):
                         (hours))
         orders = self.initialize_orders(page)
         self.parse_orders(noaa, orders, append_files, hours, async)
-        key = lambda x: x['start'] if 'start' in x else ''
+        key = lambda x: str(x['id'])
         orders.sort(key=key)
         return orders
 
@@ -227,6 +227,6 @@ class api(core.api):
         tmp['postSurvey'] = ['Submit']
         self.conn.post('survey', data=tmp, form_name='FORM1')
 
-    def request_set(self, data):
+    def request_set(self, data, async=False):
         new = [e for e in data if e['id'] is '+']
         list(map(self.request_new, new))
