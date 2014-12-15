@@ -1,7 +1,7 @@
 noaaclass
 =========
 
-[![License](https://pypip.in/license/noaaclass/badge.svg)](https://pypi.python.org/pypi/noaaclass/) [![Downloads](https://pypip.in/download/noaaclass/badge.svg)](https://pypi.python.org/pypi/noaaclass/) [![Build Status](https://travis-ci.org/ecolell/noaaclass.svg?branch=master)](https://travis-ci.org/ecolell/noaaclass) [![Coverage Status](https://coveralls.io/repos/ecolell/noaaclass/badge.png)](https://coveralls.io/r/ecolell/noaaclass) [![Code Health](https://landscape.io/github/ecolell/noaaclass/master/landscape.png)](https://landscape.io/github/ecolell/noaaclass/master) [![PyPI version](https://badge.fury.io/py/noaaclass.svg)](http://badge.fury.io/py/noaaclass)
+[![License](https://pypip.in/license/noaaclass/badge.svg)](https://pypi.python.org/pypi/noaaclass/) [![Downloads](https://pypip.in/download/noaaclass/badge.svg)](https://pypi.python.org/pypi/noaaclass/) [![Build Status](https://travis-ci.org/gersolar/noaaclass.svg?branch=master)](https://travis-ci.org/gersolar/noaaclass) [![Coverage Status](https://coveralls.io/repos/gersolar/noaaclass/badge.png)](https://coveralls.io/r/gersolar/noaaclass) [![Code Health](https://landscape.io/github/gersolar/noaaclass/master/landscape.png)](https://landscape.io/github/gersolar/noaaclass/master) [![PyPI version](https://badge.fury.io/py/noaaclass.svg)](http://badge.fury.io/py/noaaclass)
 [![Supported Python versions](https://pypip.in/py_versions/noaaclass/badge.svg)](https://pypi.python.org/pypi/noaaclass/)
 
 A python library that allow to request images to the NOAA CLASS (Comprehensive Large Array-Data Stewardship System).
@@ -14,7 +14,7 @@ If you want to use this library on any GNU/Linux or OSX system you just need to 
 
     $ pip install noaaclass
 
-If you want to improve this library, you should download the [github repository](https://github.com/ecolell/noaaclass) and execute:
+If you want to improve this library, you should download the [github repository](https://github.com/gersolar/noaaclass) and execute:
 
     $ make deploy
 
@@ -26,7 +26,7 @@ To test all the project you should use the command:
 
     $ make test
 
-If you want to help us or report an issue join to us through the [GitHub issue tracker](https://github.com/ecolell/noaaclass/issues).
+If you want to help us or report an issue join to us through the [GitHub issue tracker](https://github.com/gersolar/noaaclass/issues).
 
 
 Example
