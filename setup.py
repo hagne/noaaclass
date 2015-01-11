@@ -49,9 +49,9 @@ setup(
     name='noaaclass',
     version=version_git,
     author=u'Eloy Adonis Colell',
-    author_email='eloy.colell@gmail.com',
+    author_email='gersolar@gmail.com',
     packages=find_packages(),
-    url='https://github.com/ecolell/noaaclass',
+    url='https://github.com/gersolar/noaaclass',
     license='MIT',
     description=('A python library that allow to request images '
                  'to the NOAA CLASS (Comprehensive Large Array-Data '
