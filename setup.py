@@ -54,7 +54,7 @@ setup(
     version=version_git,
     author=u'Eloy Adonis Colell',
     author_email='gersolar@gmail.com',
-    packages=['noaaclass'],
+    packages=['noaaclass', 'noaaclass.product'],
     url='https://github.com/gersolar/noaaclass',
     license='MIT',
     description=('A python library that allow to request images '
