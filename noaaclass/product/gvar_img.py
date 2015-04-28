@@ -208,10 +208,27 @@ class api(core.api):
         data['between_through'] = 'T'
         noaa.post('psearch%s' % self.name_upper, data=data,
                   form_name='search_frm')
+        # It iterate over the pages to select the items of each page.
+        page = 0
+        lapse = timedelta(hours=0)
+        while e['start'] + lapse <= e['end']:
+            forms = noaa.translator.get_forms(noaa.last_response_soup)
+            tab = e['start'] + lapse
+            tmp = forms['rform']
+            tmp['update_action'] = 'GotoInterval'
+            tmp['GotoInterval'] = tab.strftime('%Y-%m-%d %H:%M:%S.000')
+            tmp['page'] = page
+            noaa.post('results%s' % self.name, data=tmp, form_name='rform')
+            forms = noaa.translator.get_forms(noaa.last_response_soup)
+            tmp = forms['rform']
+            tmp['update_action'] = 'Select Page'
+            tmp['GotoInterval'] = tab.strftime('%Y-%m-%d %H:%M:%S.000')
+            tmp['page'] = page
+            noaa.post('results%s' % self.name, data=tmp, form_name='rform')
+            page += 1
+            lapse += timedelta(hours=6)
         forms = noaa.translator.get_forms(noaa.last_response_soup)
         tmp = forms['rform']
-        tmp['update_action'] = ['SelectAll']
-        noaa.post('results%s' % self.name, data=tmp, form_name='rform')
         forms = noaa.translator.get_forms(noaa.last_response_soup)
         noaa.get('shopping_cart')
         forms = noaa.translator.get_forms(noaa.last_response_soup)

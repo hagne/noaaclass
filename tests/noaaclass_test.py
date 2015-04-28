@@ -25,7 +25,7 @@ class TestNoaaclass(unittest.TestCase):
 
     def test_last_response_setter(self):
         # Check if raise an exception if the response was wrong.
-        with self.assertRaisesRegexp(Exception, 'Connection error \(500\)'):
+        with self.assertRaisesRegexp(Exception, 'Connection error \(200\)'):
             self.noaa.get('wrong_page')
         # Check if the page was valid it should change the last_response value.
         previous_response = self.noaa.last_response

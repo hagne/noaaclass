@@ -172,7 +172,8 @@ class Connection(object):
 
     @last_response.setter
     def last_response(self, response):
-        if response.status_code != requests.codes.ok:
+        if (response.status_code != requests.codes.ok or
+            'An Error Occurred' in self.pack(response).select('h1')[0].text):
             raise Exception('Connection error (%i).' % response.status_code)
         self._last_response = response
 
