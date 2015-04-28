@@ -3,8 +3,8 @@ noaaclass
 
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gersolar/noaaclass?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![License](https://pypip.in/license/noaaclass/badge.svg)](https://pypi.python.org/pypi/noaaclass/) [![Downloads](https://pypip.in/download/noaaclass/badge.svg)](https://pypi.python.org/pypi/noaaclass/) [![Build Status](https://travis-ci.org/gersolar/noaaclass.svg?branch=master)](https://travis-ci.org/gersolar/noaaclass) [![Coverage Status](https://coveralls.io/repos/gersolar/noaaclass/badge.png)](https://coveralls.io/r/gersolar/noaaclass) [![Code Health](https://landscape.io/github/gersolar/noaaclass/master/landscape.png)](https://landscape.io/github/gersolar/noaaclass/master) [![PyPI version](https://badge.fury.io/py/noaaclass.svg)](http://badge.fury.io/py/noaaclass)
-[![Supported Python versions](https://pypip.in/py_versions/noaaclass/badge.svg)](https://pypi.python.org/pypi/noaaclass/)
+[![License](https://img.shields.io/pypi/l/noaaclass.svg)](https://raw.githubusercontent.com/gersolar/noaaclass/master/LICENSE) [![Downloads](https://img.shields.io/pypi/dm/noaaclass.svg)](https://pypi.python.org/pypi/noaaclass/) [![Build Status](https://travis-ci.org/gersolar/noaaclass.svg?branch=master)](https://travis-ci.org/gersolar/noaaclass) [![Coverage Status](https://coveralls.io/repos/gersolar/noaaclass/badge.png)](https://coveralls.io/r/gersolar/noaaclass) [![Code Health](https://landscape.io/github/gersolar/noaaclass/master/landscape.png)](https://landscape.io/github/gersolar/noaaclass/master) [![PyPI version](https://badge.fury.io/py/noaaclass.svg)](http://badge.fury.io/py/noaaclass)
+[![Stories in Ready](https://badge.waffle.io/gersolar/noaaclass.png?label=ready&title=Ready)](https://waffle.io/gersolar/noaaclass)
 
 A python library that allow to request images to the NOAA CLASS (Comprehensive Large Array-Data Stewardship System).
 
