@@ -169,6 +169,7 @@ class TestGvarimg(unittest.TestCase):
                 self.assertEquals(obtained[k], original[k])
 
     def no_test_request_set_new(self):
+        time.sleep(40)
         gvar_img = self.noaa.request.gvar_img
         data = gvar_img.get(async=True)
         data.extend(self.req_data)
@@ -176,6 +177,7 @@ class TestGvarimg(unittest.TestCase):
         self.assertEquals(len(copy), len(data))
         [self.assertEqualsRequests(copy[i], data[i])
          for i in range(len(data))]
+        time.sleep(40)
 
 if __name__ == '__main__':
     unittest.main()
