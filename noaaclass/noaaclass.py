@@ -130,9 +130,10 @@ class Subscribe(Action):
 
 
 class Connection(object):
-    def __init__(self, username=None, password=None):
+    def __init__(self, username=None, password=None, verify=False):
         self.headers = {'User-Agent': 'Mozilla/5.0'}
         self.session = requests.Session()
+        self.verify = verify
         if username and password:
             self.base_uri = '://www.nsof.class.noaa.gov/saa/products/'
             self.authenticate = Auth(username, password)
@@ -192,7 +193,8 @@ class Connection(object):
         self.last_response = self.session.get(proto + self.base_uri + url,
                                               headers=self.headers,
                                               cookies=self.cookies,
-                                              allow_redirects=True)
+                                              allow_redirects=True,
+                                              verify=self.verify)
         return self.last_response_soup
 
     def pack(self, response, async=False):
@@ -241,7 +243,8 @@ class Connection(object):
                                                headers=self.headers,
                                                cookies=self.cookies,
                                                data=form,
-                                               allow_redirects=True)
+                                               allow_redirects=True,
+                                               verify=self.verify)
         return self.last_response_soup
 
 

@@ -151,7 +151,7 @@ class TestGvarimg(unittest.TestCase):
     def test_request_get(self):
         gvar_img = self.noaa.request.gvar_img
         for order in gvar_img.get():
-            for key in ['id', 'delivered', 'datetime', 'format', 'files',
+            for key in ['id', 'status', 'datetime', 'format', 'files',
                         'south', 'north', 'west', 'east']:
                 self.assertIn(key, order.keys())
 
