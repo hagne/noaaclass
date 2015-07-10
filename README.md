@@ -18,7 +18,7 @@ If you want to use this library on any GNU/Linux or OSX system you just need to 
 
 If you want to improve this library, you should download the [github repository](https://github.com/gersolar/noaaclass) and execute:
 
-    $ make deploy
+    $ make virtualenv deploy
 
 
 Testing
