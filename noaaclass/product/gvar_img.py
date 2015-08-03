@@ -14,8 +14,10 @@ file_item = lambda row, i: element(row, 'td', i)
 file_data = lambda row: (file_item(row, 3), int(file_item(row, 5)),
                          file_item(row, 4) == 'GVAR_IMG')
 resume_id = lambda t: element(t, 'td a', 0)
-resume_activity = lambda t: datetime.strptime(
-    element(t, 'td', -1).split('.')[0], '%Y-%m-%d %H:%M:%S')
+resume_activity = (lambda t:
+                   datetime.strptime(element(t, 'td', -1).split('.')[0],
+                                     '%Y-%m-%d %H:%M:%S')
+                   if element(t, 'td', -1) else datetime.utcnow())
 resume_status = lambda t: element(t, 'td', -3).lower()
 resume_size = lambda t: int(element(t, 'td', -4))
 resume_order = lambda t: {
