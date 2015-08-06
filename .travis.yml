@@ -14,6 +14,8 @@ python:
   - 2.7
   - 3.2
   - 3.3
+  - pypy
+  - pypy3
 # command to install dependencies
 install:
   - "make deploy"

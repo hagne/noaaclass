@@ -20,6 +20,10 @@ If you want to improve this library, you should download the [github repository]
 
     $ make virtualenv deploy
 
+Under ubuntu/debian you can try with:
+
+    $ make ubuntu virtualenv deploy
+
 
 Testing
 -------
