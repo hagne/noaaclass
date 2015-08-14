@@ -6,6 +6,10 @@ import re
 from core import Action
 import itertools
 from datetime import datetime, timedelta
+import urllib3
+
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class Auth(object):
@@ -173,8 +177,9 @@ class Connection(object):
 
     @last_response.setter
     def last_response(self, response):
+        packed = self.pack(response).select('h1')
         if (response.status_code != requests.codes.ok or
-            'An Error Occurred' in self.pack(response).select('h1')[0].text):
+            (packed and 'An Error Occurred' in packed[0].text)):
             raise Exception('Connection error (%i).' % response.status_code)
         self._last_response = response
 
