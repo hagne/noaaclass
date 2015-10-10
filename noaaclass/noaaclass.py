@@ -1,6 +1,7 @@
 import requests
-import grequests
 from requests.exceptions import ConnectionError
+from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import cpu_count
 from bs4 import BeautifulSoup as beautifulsoup
 import re
 from core import Action
@@ -209,13 +210,15 @@ class Connection(object):
         return soup
 
     def getmultipleasync(self, urls, proto='http'):
-        reqs = (grequests.get(proto + self.base_uri + u,
-                              headers=self.headers,
-                              session=self.session,
-                              cookies=self.cookies,
-                              allow_redirects=True)
-                for u in urls)
-        return grequests.map(reqs)
+        reqs = map(lambda u:
+                   [[proto + self.base_uri + u],
+                    {"headers": self.headers,
+                     # "session": self.session,
+                     "cookies": self.cookies,
+                     "allow_redirects": True}], urls)
+        with ThreadPoolExecutor(max_workers=cpu_count()) as pool:
+            result = pool.map(lambda p: requests.get(*p[0], **p[1]), reqs)
+        return result
 
     def getmultiplesync(self, urls, proto='http'):
         result = []
