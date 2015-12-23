@@ -28,6 +28,15 @@ resume_order = lambda t: {
 }
 
 
+FILE_FORMATS = {
+    '.nc': 'NetCDF',
+    '.area': 'Area',
+    '.giff': 'GIF',
+    '.jpg': 'JPG',
+    '': 'Raw'
+}
+
+
 class api(core.api):
     def initialize(self):
         self.name = 'GVAR_IMG'
@@ -127,28 +136,31 @@ class api(core.api):
         list(map(self.subscribe_edit, edit))
         list(map(self.subscribe_remove, remove))
 
-    def parse_area(self, head, order):
-        coords = ['south', 'north', 'west', 'east']
-        cast = lambda n, v: self.keys['get'][self.keys['set'][n][0]][1](v)
-        for index in range(len(coords)):
-            name = coords[index]
-            value = head[8+index].text
-            order[name] = cast(name, value) / 100
-
     def obtain_items(self, last_response_soup, item_functor, check_functor):
         anchors = last_response_soup.select('.zebra td a')
         return map(item_functor, filter(check_functor, anchors))
 
-    def parse_head(self, noaa, order, last_response_soup):
-        url = last_response_soup.select('.zebra td a')[0].attrs['href']
-        last_response_soup = noaa.get(url)
-        head = last_response_soup.select('.class_table td')
-        self.parse_area(head, order)
-        other = {
-            'format': head[1].text,
-            'channel': range(int(head[12].text), int(head[13].text)+1),
-        }
-        order.update(other)
+    def deduce_head(self, noaa, order, last_response_soup):
+        rows = last_response_soup.select('.zebra tr')
+        rows = map(lambda r: r.select('td.oq_changeOrder'),
+                   rows)
+        files = filter(lambda f: f,
+                       map(lambda t: t[1].getText() if t else t, rows))
+        if 'format' not in order and files[0] != 'Pending':
+            extension = re.compile(r'.*BAND\_\d\d(.*)')
+            channel = re.compile(r'.*BAND\_(\d+).*')
+            exts = filter(lambda e: e, map(extension.match, files))
+            exts = filter(lambda ext: ext != '.meta',
+                          map(lambda ext: ext.group(1), exts))
+            chs = map(channel.match, files)
+            chs = filter(lambda ch: ch,
+                         map(lambda ch: int(ch.group(1)) if ch else None, chs))
+            chs.sort()
+            other = {
+                'format': FILE_FORMATS[exts[0]] if exts else 'unknown',
+                'channel': chs,
+            }
+            order.update(other)
 
     def parse_order(self, noaa, order, last_response_soup, append_files):
         table = last_response_soup.select('.class_table td')
@@ -157,7 +169,7 @@ class api(core.api):
         order['files'] = {'http': [], 'ftp': []}
         day_before_yesterday = datetime.utcnow() - timedelta(days=2)
         order['old'] = order['datetime'] < day_before_yesterday
-        self.parse_head(noaa, order, last_response_soup)
+        self.deduce_head(noaa, order, last_response_soup)
         if append_files:
             item = lambda i: i['href'].split("'")[1]
             is_http = lambda i: 'www' in i.text

@@ -151,15 +151,18 @@ class TestGvarimg(unittest.TestCase):
     def test_request_get(self):
         gvar_img = self.noaa.request.gvar_img
         for order in gvar_img.get():
-            for key in ['id', 'status', 'datetime', 'format', 'files',
-                        'south', 'north', 'west', 'east']:
+            for key in ['id', 'status', 'datetime', 'format', 'files']:
                 self.assertIn(key, order.keys())
 
     def assertEqualsRequests(self, obtained, original):
-        asymetric = lambda x: x not in ['coverage', 'end', 'start',
-                                        'satellite', 'schedule', 'id']
+        avoid = ['coverage', 'end', 'start',
+                 'satellite', 'schedule', 'id', 'north',
+                 'south', 'east', 'west']
+        asymetric = lambda x: x not in avoid
+        if not obtained['files']['http']:
+            avoid.extend(['format', 'channel'])
         for k in filter(asymetric, original.keys()):
-            self.assertTrue(k in obtained.keys())
+            self.assertIn(k, obtained.keys())
             if isinstance(original[k], float):
                 self.assertEqual(int(obtained[k]), int(original[k]))
             elif isinstance(original[k], datetime):
