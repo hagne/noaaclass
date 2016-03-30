@@ -69,7 +69,7 @@ class api(object):
         return getattr(self, '%s_get' % self.action_name)(*args, **kwargs)
 
     def set(self, *args, **kwargs):
-        auto_get = False
+        auto_get = True
         if 'auto_get' in kwargs:
             auto_get = kwargs['auto_get']
             del kwargs['auto_get']
