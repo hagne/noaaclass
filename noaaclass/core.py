@@ -69,9 +69,13 @@ class api(object):
         return getattr(self, '%s_get' % self.action_name)(*args, **kwargs)
 
     def set(self, *args, **kwargs):
+        auto_get = False
+        if 'auto_get' in kwargs:
+            auto_get = kwargs['auto_get']
+            del kwargs['auto_get']
         getattr(self, '%s_set' % self.action_name)(*args, **kwargs)
         local = args[0]
-        while True:
+        while not auto_get:
             db = self.get(**kwargs)
             if len(db) == len(local):
                 break

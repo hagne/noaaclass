@@ -182,5 +182,17 @@ class TestGvarimg(unittest.TestCase):
          for i in range(len(data))]
         time.sleep(40)
 
+    def test_request_set_without_auto_get(self):
+        time.sleep(40)
+        gvar_img = self.noaa.request.gvar_img
+        data = gvar_img.get(async=True)
+        data.extend(self.req_data)
+        start = datetime.now()
+        copy = gvar_img.set(data, async=True, auto_get=False)
+        end  = datetime.now()
+        diff = lambda end, start: (end - start).total_seconds()
+        self.assertGreaterEqual(200, diff(end, start))
+        time.sleep(40)
+
 if __name__ == '__main__':
     unittest.main()
