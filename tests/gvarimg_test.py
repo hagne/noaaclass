@@ -187,11 +187,14 @@ class TestGvarimg(unittest.TestCase):
         gvar_img = self.noaa.request.gvar_img
         data = gvar_img.get(async=True)
         data.extend(self.req_data)
+        large_start = datetime.now()
+        copy = gvar_img.set(data, async=True, auto_get=True)
+        large_end  = datetime.now()
         start = datetime.now()
         copy = gvar_img.set(data, async=True, auto_get=False)
         end  = datetime.now()
         diff = lambda end, start: (end - start).total_seconds()
-        self.assertGreaterEqual(200, diff(end, start))
+        self.assertGreaterEqual(diff(large_end, large_start), diff(end, start))
         time.sleep(40)
 
 if __name__ == '__main__':

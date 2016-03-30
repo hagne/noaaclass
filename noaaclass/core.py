@@ -73,10 +73,10 @@ class api(object):
         if 'auto_get' in kwargs:
             auto_get = kwargs['auto_get']
             del kwargs['auto_get']
-            print kwargs
         getattr(self, '%s_set' % self.action_name)(*args, **kwargs)
         local = args[0]
-        while not auto_get:
+        db = local
+        while auto_get:
             db = self.get(**kwargs)
             if len(db) == len(local):
                 break
