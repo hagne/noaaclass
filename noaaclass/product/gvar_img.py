@@ -61,13 +61,13 @@ class api(core.api):
         self.translate(single, 'format', direct, 'format_%s' % self.name, str)
 
     def subscribe_get_append_orders(self, noaa, d, append_files, hours, async):
-        page = noaa.get('order_list?order=%s&type=SUBS&displayDetails=Y'
-                        '&hours=%i&status_page=1&group_size=25&orderby=1' %
-                        (d['id'], hours))
+        page = noaa.get('order_list?display_id=%s&order_type=SUBS&'
+                        'condense=false&hours=%s&page_number=1&'
+                        'group_size=25' % (d['id'], hours))
         d['orders'] = self.initialize_orders(page)
         self.parse_orders(noaa, d['orders'], append_files, hours, async)
 
-    def subscribe_get(self, append_orders=False, append_files=False, hours=1,
+    def subscribe_get(self, append_orders=False, append_files=False, hours=2,
                       async=False):
         # If append_files also automatically should append_orders.
         append_orders = append_files or append_orders
@@ -142,7 +142,7 @@ class api(core.api):
 
     def deduce_head(self, noaa, order, last_response_soup):
         rows = last_response_soup.select('.zebra tr')
-        rows = map(lambda r: r.select('td.oq_changeOrder'),
+        rows = map(lambda r: r.select('td.oq_table_line_item_row'),
                    rows)
         files = filter(lambda f: f,
                        map(lambda t: t[1].getText() if t else t, rows))
@@ -180,8 +180,8 @@ class api(core.api):
                 self.obtain_items(last_response_soup, item, is_ftp))
 
     def parse_orders(self, noaa, orders, append_files, hours, async):
-        urls = [('order_details?order=%s&hours=%i&status_page=1'
-                 '&group_size=1000&orderby=1' % (order['id'], hours))
+        urls = [('order_details?order_number=%s&hours=%i&page_number=1'
+                 '&group_size=1000' % (order['id'], hours))
                 for order in orders]
         responses = noaa.getmultiple(urls, async=async)
         list(map(lambda a, noaa=noaa, append_files=append_files:
@@ -195,7 +195,7 @@ class api(core.api):
         return filter(lambda o: o['status'] != 'delivered',
                       map(resume_order, data))
 
-    def request_get(self, append_files=False, hours=1, async=False):
+    def request_get(self, append_files=False, hours=2, async=False):
         noaa = self.conn
         page = noaa.get('order_list?order=&status=&type=USER'
                         '&displayDetails=N&hours=%i&status_page=1'
