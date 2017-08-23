@@ -7,8 +7,7 @@ from setuptools.command import easy_install
 
 
 def parse_requirements(filename):
-    return list(filter(lambda line: (line.strip())[0] != '#',
-                       [line.strip() for line in open(filename).readlines()]))
+    return list([line for line in [line.strip() for line in open(filename).readlines()] if (line.strip())[0] != '#'])
 
 
 def calculate_version():
@@ -52,7 +51,7 @@ def get_long_description():
 setup(
     name='noaaclass',
     version=version_git,
-    author=u'Eloy Adonis Colell',
+    author='Eloy Adonis Colell',
     author_email='gersolar@gmail.com',
     packages=['noaaclass', 'noaaclass.product'],
     url='https://github.com/gersolar/noaaclass',
