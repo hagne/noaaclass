@@ -12,7 +12,7 @@ unattended:
 	@ (sudo ls 2>&1) >> tracking.log
 
 ubuntu:
-	@ sudo apt-get -y install zlibc libssl0.9.8 libbz2-dev libxslt1-dev libxml2-dev
+	@ sudo apt-get -y install zlibc libssl1.0.0 libbz2-dev libxslt1-dev libxml2-dev
 	@ echo "[ assume       ] ubuntu distribution"
 
 virtualenv:
@@ -27,6 +27,7 @@ bin/activate: requirements.txt
 	@ ($(SOURCE_ACTIVATE) $(EASYINSTALL) pip 2>&1) >> tracking.log
 	@ echo "[ installing   ] $(PIP) requirements"
 	@ $(SOURCE_ACTIVATE) $(PIP) install --upgrade pip
+	@ $(SOURCE_ACTIVATE) $(PIP) install --upgrade setuptools
 	@ $(SOURCE_ACTIVATE) $(PIP) install --upgrade distribute
 	@ $(SOURCE_ACTIVATE) $(PIP) install -e  .
 	@ $(SOURCE_ACTIVATE) $(PIP) install --default-timeout=100 -r requirements.development.txt
