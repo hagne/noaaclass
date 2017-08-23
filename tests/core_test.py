@@ -1,6 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import unittest
-from noaaclass import noaaclass
-from noaaclass import core
+
+from noaaclass import core, noaaclass
 
 
 class TestCore(unittest.TestCase):
@@ -9,8 +11,9 @@ class TestCore(unittest.TestCase):
 
     def test_initialize(self):
         # Check if raise an Exception when the api don't define the initialize.
-        with self.assertRaisesRegexp(Exception, 'Unregistered API.'):
-                core.api('nothing')
+        with self.assertRaisesRegex(Exception, 'Unregistered API.'):
+            core.api('nothing')
+
 
 if __name__ == '__main__':
     unittest.main()
