@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import time
 
 
@@ -11,7 +13,7 @@ class Action(object):
     def __getattr__(self, name):
         try:
             return self.load('noaaclass.product.%s' % name).api(self)
-        except Exception, e:
+        except Exception as e:
             raise Exception('There is no API to the "%s" product.\n%s'
                             % (name, e))
 
@@ -53,16 +55,16 @@ class api(object):
 
     def local_to_post(self, local):
         var = self.keys['set']
-        return {var[k][0]: var[k][1](v) for k, v in local.items()
-                if k in var.keys()}
+        return {var[k][0]: var[k][1](v) for k, v in list(local.items())
+                if k in list(var.keys())}
 
     def post_to_local(self, post):
         get = lambda k: self.keys['get'][k]
         local = lambda k: get(k)[0]
         adapter = lambda k: get(k)[1]
         structure = lambda k, e, a: get(k)[2](e, a)
-        keys = self.keys['get'].keys()
-        return {local(k): structure(k, e, adapter(k)) for k, e in post.items()
+        keys = list(self.keys['get'].keys())
+        return {local(k): structure(k, e, adapter(k)) for k, e in list(post.items())
                 if k in keys}
 
     def get(self, *args, **kwargs):

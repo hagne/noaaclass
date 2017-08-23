@@ -1,14 +1,17 @@
-import requests
-from requests.exceptions import ConnectionError
-from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import cpu_count
-from bs4 import BeautifulSoup as beautifulsoup
-import re
-from core import Action
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import itertools
+import re
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
-import urllib3
+from multiprocessing import cpu_count
 
+import requests
+import urllib3
+from bs4 import BeautifulSoup as beautifulsoup
+from requests.exceptions import ConnectionError
+
+from .core import Action
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -58,9 +61,9 @@ class Translator(object):
     def get_input_value(self, e, show_value):
         value = ''
         is_single = (lambda x: 'type' not in e.attrs
-                     or e.attrs['type'] in ['text', 'hidden'])
+                               or e.attrs['type'] in ['text', 'hidden'])
         is_checked = (lambda x: 'checked' in e.attrs
-                      and e.attrs['checked'] in ['1', 'Y'])
+                                and e.attrs['checked'] in ['1', 'Y'])
         all_values = not show_value
         if 'value' in e.attrs:
             if (is_single(e) or is_checked(e) or all_values):
@@ -78,13 +81,13 @@ class Translator(object):
                     itertools.groupby(list_of_tuples, lambda x: x[0]))
         cleaned = lambda l: [e for e in l if e != '']
         clear = lambda l: cleaned(l) if len(cleaned(l)) else ['']
-        resume = lambda (k, v): (k, clear(v if not isinstance(v[0], list)
-                                          else v[0]))
-        return dict(map(resume, _aux.items()))
+        resume = lambda k_v: (k_v[0], clear(k_v[1] if not isinstance(k_v[1][0], list)
+                                            else k_v[1][0]))
+        return dict(list(map(resume, list(_aux.items()))))
 
     def get_fields(self, form_soup, show_value):
         parse = lambda frm, cls: [e for e in self.get_value(
-            frm.select(cls), show_value
+                frm.select(cls), show_value
         )]
         elements = parse(form_soup, 'input')
         elements.extend(parse(form_soup, 'select'))
@@ -96,7 +99,7 @@ class Translator(object):
         scrap_form = lambda f: (f.attrs['name'],
                                 self.get_fields(f, not list_options))
         has_name = lambda f: 'name' in f.attrs
-        result = list(map(scrap_form, filter(has_name, forms)))
+        result = list(map(scrap_form, list(filter(has_name, forms))))
         return dict(result)
 
     def simplify(self, element):
@@ -104,7 +107,7 @@ class Translator(object):
                 element[0:len(element)])
 
     def plain(self, form):
-        for k, v in form.items():
+        for k, v in list(form.items()):
             if isinstance(v, list):
                 for x in v:
                     yield (k, x)
@@ -114,11 +117,11 @@ class Translator(object):
     def fill_form(self, page, name, data):
         forms = self.get_forms(page)
         clear = lambda x: x is not ''
-        form = {k: filter(clear, v) for k, v in
-                (forms[name]).items()}
-        form = {k: data[k] if k in data.keys()
-                else self.simplify(v)
-                for k, v in form.items()}
+        form = {k: list(filter(clear, v)) for k, v in
+                list((forms[name]).items())}
+        form = {k: data[k] if k in list(data.keys())
+        else self.simplify(v)
+                for k, v in list(form.items())}
         return [x for x in self.plain(form)]
 
 
@@ -136,11 +139,11 @@ class Subscribe(Action):
 
 class Connection(object):
     def __init__(self, username=None, password=None, verify=False):
-        self.headers = {'User-Agent': 'Mozilla/5.0'}
+        self.headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.125 YaBrowser/17.7.1.716 (beta) Yowser/2.5 Safari/537.36'}
         self.session = requests.Session()
         self.verify = verify
         if username and password:
-            self.base_uri = '://www.nsof.class.noaa.gov/saa/products/'
+            self.base_uri = '://www.class.ncdc.noaa.gov/saa/products/'
             self.authenticate = Auth(username, password)
             self.get('welcome')
             self.translator = Translator()
@@ -148,7 +151,7 @@ class Connection(object):
             self.request = Request(self)
             self.subscribe = Subscribe(self)
         else:
-            self.base_uri = '://www.nsof.class.noaa.gov'
+            self.base_uri = '://www.class.ncdc.noaa.gov/'
 
     def next_up_datetime(self):
         end = datetime.utcnow()
@@ -169,7 +172,7 @@ class Connection(object):
     @property
     def cookies(self):
         self._cookies = requests.utils.cookiejar_from_dict(
-            requests.utils.dict_from_cookiejar(self.session.cookies))
+                requests.utils.dict_from_cookiejar(self.session.cookies))
         return self._cookies
 
     @property
@@ -180,7 +183,7 @@ class Connection(object):
     def last_response(self, response):
         packed = self.pack(response).select('h1')
         if (response.status_code != requests.codes.ok or
-            (packed and 'An Error Occurred' in packed[0].text)):
+                (packed and 'An Error Occurred' in packed[0].text)):
             raise Exception('Connection error (%i).' % response.status_code)
         self._last_response = response
 
@@ -188,7 +191,7 @@ class Connection(object):
     def last_response_soup(self):
         return self.pack(self.last_response)
 
-    def get(self, url, proto='http'):
+    def get(self, url, proto='https'):
         """
         Load an url using the GET method.
 
@@ -204,38 +207,39 @@ class Connection(object):
         return self.last_response_soup
 
     def pack(self, response, async=False):
-        soup = beautifulsoup(response.text)
+        soup = beautifulsoup(response.text, "lxml")
         if async:
             response.close()
         return soup
 
-    def getmultipleasync(self, urls, proto='http'):
-        reqs = map(lambda u:
-                   [[proto + self.base_uri + u],
-                    {"headers": self.headers,
+    def getmultipleasync(self, urls, proto='https'):
+        reqs = [[[proto + self.base_uri + u],
+                 {
+                     "headers"        : self.headers,
                      # "session": self.session,
-                     "cookies": self.cookies,
-                     "allow_redirects": True}], urls)
+                     "cookies"        : self.cookies,
+                     "allow_redirects": True
+                 }] for u in urls]
         with ThreadPoolExecutor(max_workers=cpu_count()) as pool:
             result = pool.map(lambda p: requests.get(*p[0], **p[1]), reqs)
         return result
 
-    def getmultiplesync(self, urls, proto='http'):
+    def getmultiplesync(self, urls, proto='https'):
         result = []
         for u in urls:
             self.get(u, proto)
             result.append(self.last_response)
         return result
 
-    def getmultiple(self, urls, proto='http', async=False):
+    def getmultiple(self, urls, proto='https', async=False):
         result = []
         if len(urls) > 0:
             fx = self.getmultipleasync if async else self.getmultiplesync
             result = fx(urls, proto)
-            result = filter(lambda x: x is not None, result)
+            result = [x for x in result if x is not None]
         return list(map(lambda r, a=async: self.pack(r, a), result))
 
-    def post(self, url, data, proto='http', form_name=None):
+    def post(self, url, data, proto='https', form_name=None):
         """
         Load an url using the POST method.
 

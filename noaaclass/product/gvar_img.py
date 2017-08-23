@@ -1,6 +1,18 @@
-from noaaclass import core
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+GOES Satellite Data GVAR_IMG (Imager).
+
+For more infor see CLASS Glossary:
+https://www.class.ncdc.noaa.gov/glossary/GVAR_IMG.htm
+"""
+
 import re
 from datetime import datetime, timedelta
+from random import randint
+
+from noaaclass import core
 
 select = lambda i, n, data: [d for d in data if d['id'] == i or d['name'] == n]
 changed = lambda x, data: x != select(x['id'], x['name'], data)[0]
@@ -21,19 +33,18 @@ resume_activity = (lambda t:
 resume_status = lambda t: element(t, 'td', -3).lower()
 resume_size = lambda t: int(element(t, 'td', -4))
 resume_order = lambda t: {
-    'id': resume_id(t),
+    'id'           : resume_id(t),
     'last_activity': resume_activity(t),
-    'status': resume_status(t),
-    'size': resume_size(t),
+    'status'       : resume_status(t),
+    'size'         : resume_size(t),
 }
 
-
 FILE_FORMATS = {
-    '.nc': 'NetCDF',
+    '.nc'  : 'NetCDF',
     '.area': 'Area',
     '.giff': 'GIF',
-    '.jpg': 'JPG',
-    '': 'Raw'
+    '.jpg' : 'JPG',
+    ''     : 'Raw'
 }
 
 
@@ -83,7 +94,7 @@ class api(core.api):
             tmp = forms['sub_frm']
             noaa.post('sub_deliver', tmp, form_name='sub_frm')
             forms = noaa.translator.get_forms(noaa.last_response_soup)
-            join = lambda x, y: dict(x.items() + y.items())
+            join = lambda x, y: dict(list(x.items()) + list(y.items()))
             tmp = join(tmp, forms['sub_frm'])
             d.update(self.post_to_local(tmp))
             if append_orders:
@@ -93,16 +104,17 @@ class api(core.api):
 
     def subscribe_new(self, e):
         self.conn.get('sub_details?sub_id=0&'
-                      'datatype_family=%s&submit.x=40&submit.y=11' %
-                      self.name_upper)
+                      'datatype_family={}&submit.x={}&submit.y={}'.format(self.name_upper,
+                                                                          randint(1, 60),
+                                                                          randint(1, 11)))
         data = self.local_to_post(e)
         self.conn.post('sub_deliver', data, form_name='sub_frm')
         channel_mask = list('000000' + 'X' * 24)
         data = self.local_to_post(e)
         for i in e['channel']:
-            channel_mask[i-1] = '1'
-            data['channels_%s' % self.name_upper] = ''.join(channel_mask),
-        self.conn.post('sub_save', data, form_name='sub_frm')
+            channel_mask[i - 1] = '1'
+        data['channels_%s' % self.name_upper] = ''.join(channel_mask), \
+                                                self.conn.post('sub_save', data, form_name='sub_frm')
 
     def subscribe_edit(self, e):
         data = self.local_to_post(e)
@@ -113,7 +125,7 @@ class api(core.api):
         channel_mask = list('000000' + 'X' * 24)
         data = self.local_to_post(e)
         for i in e['channel']:
-            channel_mask[i-1] = '1'
+            channel_mask[i - 1] = '1'
             data['channels_%s' % self.name_upper] = ''.join(channel_mask),
         self.conn.post('sub_save', data, form_name='sub_frm')
 
@@ -138,26 +150,22 @@ class api(core.api):
 
     def obtain_items(self, last_response_soup, item_functor, check_functor):
         anchors = last_response_soup.select('.zebra td a')
-        return map(item_functor, filter(check_functor, anchors))
+        return list(map(item_functor, list(filter(check_functor, anchors))))
 
     def deduce_head(self, noaa, order, last_response_soup):
         rows = last_response_soup.select('.zebra tr')
-        rows = map(lambda r: r.select('td.oq_table_line_item_row'),
-                   rows)
-        files = filter(lambda f: f,
-                       map(lambda t: t[1].getText() if t else t, rows))
+        rows = [r.select('td.oq_table_line_item_row') for r in rows]
+        files = [f for f in [t[1].getText() if t else t for t in rows] if f]
         if 'format' not in order and files[0] != 'Pending':
             extension = re.compile(r'.*BAND\_\d\d(.*)')
             channel = re.compile(r'.*BAND\_(\d+).*')
-            exts = filter(lambda e: e, map(extension.match, files))
-            exts = filter(lambda ext: ext != '.meta',
-                          map(lambda ext: ext.group(1), exts))
-            chs = map(channel.match, files)
-            chs = filter(lambda ch: ch,
-                         map(lambda ch: int(ch.group(1)) if ch else None, chs))
+            exts = [e for e in map(extension.match, files) if e]
+            exts = [ext for ext in [ext.group(1) for ext in exts] if ext != '.meta']
+            chs = list(map(channel.match, files))
+            chs = [ch for ch in [int(ch.group(1)) if ch else None for ch in chs] if ch]
             chs.sort()
             other = {
-                'format': FILE_FORMATS[exts[0]] if exts else 'unknown',
+                'format' : FILE_FORMATS[exts[0]] if exts else 'unknown',
                 'channel': chs,
             }
             order.update(other)
@@ -175,9 +183,9 @@ class api(core.api):
             is_http = lambda i: 'www' in i.text
             is_ftp = lambda i: 'ftp' in i.text
             order['files']['http'].extend(
-                self.obtain_items(last_response_soup, item, is_http))
+                    self.obtain_items(last_response_soup, item, is_http))
             order['files']['ftp'].extend(
-                self.obtain_items(last_response_soup, item, is_ftp))
+                    self.obtain_items(last_response_soup, item, is_ftp))
 
     def parse_orders(self, noaa, orders, append_files, hours, async):
         urls = [('order_details?order_number=%s&hours=%i&page_number=1'
@@ -186,14 +194,13 @@ class api(core.api):
         responses = noaa.getmultiple(urls, async=async)
         list(map(lambda a, noaa=noaa, append_files=append_files:
                  self.parse_order(noaa, a[0], a[1], append_files),
-                 zip(orders, responses)))
+                 list(zip(orders, responses))))
 
     def initialize_orders(self, page):
         # Filter old or unused data
         data = page.select('.zebra tr')
-        data = filter(lambda t: len(t.select('td')) > 0, data)
-        return filter(lambda o: o['status'] != 'delivered',
-                      map(resume_order, data))
+        data = [t for t in data if len(t.select('td')) > 0]
+        return [o for o in map(resume_order, data) if o['status'] != 'delivered']
 
     def request_get(self, append_files=False, hours=2, async=False):
         noaa = self.conn
@@ -248,8 +255,8 @@ class api(core.api):
         forms = noaa.translator.get_forms(noaa.last_response_soup)
         tmp = forms['shop']
         trans = (lambda k, v, e: [e['format']]
-                 if 'format' in k else (e['channel'] if 'channel' in k else v))
-        tmp = {k: trans(k, v, e) for k, v in tmp.items()}
+        if 'format' in k else (e['channel'] if 'channel' in k else v))
+        tmp = {k: trans(k, v, e) for k, v in list(tmp.items())}
         tmp['cocoon-action'] = ['PlaceOrder']
         self.conn.post('shop', data=tmp, form_name='shop')
         forms = noaa.translator.get_forms(noaa.last_response_soup)
