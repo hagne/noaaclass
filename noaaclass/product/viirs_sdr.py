@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-GOES Satellite Data GVAR_IMG (Imager).
+Suomi NPP VIIRS Data.
 
 For more info see CLASS Glossary:
-https://www.class.ncdc.noaa.gov/glossary/GVAR_IMG.htm
+https://www.class.ncdc.noaa.gov/glossary/NP_AUX.htm
 """
 
 import re
@@ -24,7 +24,7 @@ enabled = lambda x: re.match(r'.*%22(.*)%22.*', x).group(1) == 'Y'
 element = lambda t, ptrn, idx: t.select(ptrn)[idx].text
 file_item = lambda row, i: element(row, 'td', i)
 file_data = lambda row: (file_item(row, 3), int(file_item(row, 5)),
-                         file_item(row, 4) == 'GVAR_IMG')
+                         file_item(row, 4) == 'VIIRS_SDR')
 resume_id = lambda t: element(t, 'td a', 0)
 resume_activity = (lambda t:
                    datetime.strptime(element(t, 'td', -1).split('.')[0],
@@ -40,17 +40,13 @@ resume_order = lambda t: {
 }
 
 FILE_FORMATS = {
-    '.nc'  : 'NetCDF',
-    '.area': 'Area',
-    '.giff': 'GIF',
-    '.jpg' : 'JPG',
-    ''     : 'Raw'
+    '.h5': 'HDF'
 }
 
 
 class api(core.api):
     def initialize(self):
-        self.name = 'GVAR_IMG'
+        self.name = 'VIIRS_SDR'
         self.name_upper = self.name.upper()
         direct = lambda x: x
         enabled_to_local = lambda x: x == 'Y'
@@ -64,12 +60,7 @@ class api(core.api):
         self.translate(single, 'south', float, 'slat', str)
         self.translate(single, 'west', float, 'wlon', str)
         self.translate(single, 'east', float, 'elon', str)
-        self.translate(multiple, 'coverage', direct, 'Coverage', direct)
-        self.translate(multiple, 'schedule', direct, 'Satellite Schedule',
-                       direct)
-        self.translate(multiple, 'satellite', direct, 'Satellite', direct)
-        self.translate(multiple, 'channel', int, 'chan_%s' % self.name, str)
-        self.translate(single, 'format', direct, 'format_%s' % self.name, str)
+        self.translate(multiple, 'datatype', direct, 'Datatype', direct)
 
     def subscribe_get_append_orders(self, noaa, d, append_files, hours, async):
         page = noaa.get('order_list?display_id=%s&order_type=SUBS&'
@@ -157,16 +148,11 @@ class api(core.api):
         rows = [r.select('td.oq_table_line_item_row') for r in rows]
         files = [f for f in [t[1].getText() if t else t for t in rows] if f]
         if 'format' not in order and files[0] != 'Pending':
-            extension = re.compile(r'.*BAND\_\d\d(.*)')
-            channel = re.compile(r'.*BAND\_(\d+).*')
+            extension = re.compile(r'.*npp(.*)')
             exts = [e for e in map(extension.match, files) if e]
             exts = [ext for ext in [ext.group(1) for ext in exts] if ext != '.meta']
-            chs = list(map(channel.match, files))
-            chs = [ch for ch in [int(ch.group(1)) if ch else None for ch in chs] if ch]
-            chs.sort()
             other = {
                 'format' : FILE_FORMATS[exts[0]] if exts else 'unknown',
-                'channel': chs,
             }
             order.update(other)
 
@@ -224,9 +210,9 @@ class api(core.api):
         data['start_time'] = e['start'].strftime('%H:%M:%S')
         data['end_date'] = e['end'].strftime('%Y-%m-%d')
         data['end_time'] = e['end'].strftime('%H:%M:%S')
-        data['data_start'] = '1993-09-01'
+        data['data_start'] = '2008-04-30
         data['data_end'] = datetime.utcnow().strftime('%Y-%m-%d')
-        data['dsname_pattern'] = "^GOES\d\d\.(19|20)\d\d\.[0123]\d\d(.{0,15})$"
+        data['dsname_pattern'] = "^((\w{5})_(NPP|J01)|\w{5}-\w{5}_(NPP|J01))_D20\d\d(0[1-9]|1[012])([012][0-9]|3[01]).*$"
         data['between_through'] = 'T'
         noaa.post('psearch%s' % self.name_upper, data=data, form_name='search_frm')
         # It iterate over the pages to select the items of each page.
@@ -248,12 +234,15 @@ class api(core.api):
             noaa.post('results%s' % self.name, data=tmp, form_name='rform')
             page += 1
             lapse += timedelta(hours=6)
-        forms = noaa.translator.get_forms(noaa.last_response_soup)
-        tmp = forms['rform']
-        forms = noaa.translator.get_forms(noaa.last_response_soup)
+        # forms = noaa.translator.get_forms(noaa.last_response_soup)
+        # tmp = forms['rform']
+        # forms = noaa.translator.get_forms(noaa.last_response_soup)
         noaa.get('shopping_cart')
         forms = noaa.translator.get_forms(noaa.last_response_soup)
         tmp = forms['shop']
+
+
+
         trans = (lambda k, v, e: [e['format']]
         if 'format' in k else (e['channel'] if 'channel' in k else v))
         tmp = {k: trans(k, v, e) for k, v in list(tmp.items())}

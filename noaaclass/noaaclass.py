@@ -151,7 +151,7 @@ class Connection(object):
             self.request = Request(self)
             self.subscribe = Subscribe(self)
         else:
-            self.base_uri = '://www.class.ncdc.noaa.gov/'
+            self.base_uri = '://www.class.ncdc.noaa.gov/saa/products/'
 
     def next_up_datetime(self):
         end = datetime.utcnow()
