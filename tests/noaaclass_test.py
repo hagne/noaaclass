@@ -65,7 +65,7 @@ class TestNoaaclass(unittest.TestCase):
         # Check if the program raise an Exception if the module not exists.
         with self.assertRaisesRegex(Exception,
                                     'There is no API to '
-                                    'the "nonexistent" product.'):
+                                    'the "innexistent" product.'):
             self.noaa.request.innexistent
 
     def test_products(self):

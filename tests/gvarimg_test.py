@@ -158,7 +158,7 @@ class TestGvarimg(unittest.TestCase):
     def test_request_get(self):
         gvar_img = self.noaa.request.gvar_img
         for order in gvar_img.get():
-            for key in ['id', 'status', 'datetime', 'format', 'files']:
+            for key in ['status', 'size', 'format', 'last_activity', 'id', 'channel', 'files', 'datetime', 'old']:
                 self.assertIn(key, list(order.keys()))
 
     def assertEqualsRequests(self, obtained, original):
@@ -185,8 +185,7 @@ class TestGvarimg(unittest.TestCase):
         data.extend(self.req_data)
         copy = gvar_img.set(data, async=True)
         self.assertEqual(len(copy), len(data))
-        [self.assertEqualsRequests(copy[i], data[i])
-         for i in range(len(data))]
+        [self.assertEqualsRequests(copy[i], data[i]) for i in range(len(data))]
         time.sleep(40)
 
     def test_request_set_without_auto_get(self):
