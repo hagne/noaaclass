@@ -98,8 +98,7 @@ class api(core.api):
             tmp = join(tmp, forms['sub_frm'])
             d.update(self.post_to_local(tmp))
             if append_orders:
-                self.subscribe_get_append_orders(noaa, d, append_files,
-                                                 hours, async)
+                self.subscribe_get_append_orders(noaa, d, append_files, hours, async)
         return data
 
     def subscribe_new(self, e):
@@ -254,8 +253,7 @@ class api(core.api):
         noaa.get('shopping_cart')
         forms = noaa.translator.get_forms(noaa.last_response_soup)
         tmp = forms['shop']
-        trans = (lambda k, v, e: [e['format']]
-        if 'format' in k else (e['channel'] if 'channel' in k else v))
+        trans = (lambda k, v, e: [e['format']] if 'format' in k else (e['channel'] if 'channel' in k else v))
         tmp = {k: trans(k, v, e) for k, v in list(tmp.items())}
         tmp['cocoon-action'] = ['PlaceOrder']
         self.conn.post('shop', data=tmp, form_name='shop')

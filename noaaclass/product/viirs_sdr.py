@@ -39,10 +39,6 @@ resume_order = lambda t: {
     'size'         : resume_size(t),
 }
 
-FILE_FORMATS = {
-    '.h5': 'HDF'
-}
-
 
 class api(core.api):
     def initialize(self):
@@ -89,8 +85,7 @@ class api(core.api):
             tmp = join(tmp, forms['sub_frm'])
             d.update(self.post_to_local(tmp))
             if append_orders:
-                self.subscribe_get_append_orders(noaa, d, append_files,
-                                                 hours, async)
+                self.subscribe_get_append_orders(noaa, d, append_files, hours, async)
         return data
 
     def subscribe_new(self, e):
@@ -147,14 +142,7 @@ class api(core.api):
         rows = last_response_soup.select('.zebra tr')
         rows = [r.select('td.oq_table_line_item_row') for r in rows]
         files = [f for f in [t[1].getText() if t else t for t in rows] if f]
-        if 'format' not in order and files[0] != 'Pending':
-            extension = re.compile(r'.*npp(.*)')
-            exts = [e for e in map(extension.match, files) if e]
-            exts = [ext for ext in [ext.group(1) for ext in exts] if ext != '.meta']
-            other = {
-                'format' : FILE_FORMATS[exts[0]] if exts else 'unknown',
-            }
-            order.update(other)
+        # no need to update order with format and channel
 
     def parse_order(self, noaa, order, last_response_soup, append_files):
         table = last_response_soup.select('.class_table td')
@@ -203,49 +191,41 @@ class api(core.api):
     def request_new(self, e):
         noaa = self.conn
         noaa.get('search?sub_id=0&datatype_family={}&submit.x={}&submit.y={}'.format(self.name_upper,
-                                                                                    randint(1, 60),
-                                                                                    randint(1, 11)))
+                                                                                     randint(1, 60),
+                                                                                     randint(1, 11)))
         data = self.local_to_post(e)
         data['start_date'] = e['start'].strftime('%Y-%m-%d')
         data['start_time'] = e['start'].strftime('%H:%M:%S')
         data['end_date'] = e['end'].strftime('%Y-%m-%d')
         data['end_time'] = e['end'].strftime('%H:%M:%S')
-        data['data_start'] = '2008-04-30
+        data['data_start'] = '2008-04-30'
         data['data_end'] = datetime.utcnow().strftime('%Y-%m-%d')
-        data['dsname_pattern'] = "^((\w{5})_(NPP|J01)|\w{5}-\w{5}_(NPP|J01))_D20\d\d(0[1-9]|1[012])([012][0-9]|3[01]).*$"
+        data[
+            'dsname_pattern'] = "^((\w{5})_(NPP|J01)|\w{5}-\w{5}_(NPP|J01))_D20\d\d(0[1-9]|1[012])([012][0-9]|3[01]).*$"
         data['between_through'] = 'T'
         noaa.post('psearch%s' % self.name_upper, data=data, form_name='search_frm')
+
         # It iterate over the pages to select the items of each page.
-        page = 0
-        lapse = timedelta(hours=0)
-        while e['start'] + lapse <= e['end']:
-            forms = noaa.translator.get_forms(noaa.last_response_soup)
-            tab = e['start'] + lapse
-            tmp = forms['rform']
-            tmp['update_action'] = 'GotoInterval'
-            tmp['GotoInterval'] = tab.strftime('%Y-%m-%d %H:%M:%S.000')
-            tmp['page'] = page
-            noaa.post('results%s' % self.name, data=tmp, form_name='rform')
-            forms = noaa.translator.get_forms(noaa.last_response_soup)
+        page = 1
+        forms = noaa.translator.get_forms(noaa.last_response_soup)
+        num_in_cart = int(forms['rform']['num_in_cart'][0])
+        num_in_cart_previous = -1
+
+        while num_in_cart_previous < num_in_cart:
+            num_in_cart_previous = int(forms['rform']['num_in_cart'][0])
+            page += 1
+
             tmp = forms['rform']
             tmp['update_action'] = 'Select Page'
-            tmp['GotoInterval'] = tab.strftime('%Y-%m-%d %H:%M:%S.000')
             tmp['page'] = page
+
             noaa.post('results%s' % self.name, data=tmp, form_name='rform')
-            page += 1
-            lapse += timedelta(hours=6)
-        # forms = noaa.translator.get_forms(noaa.last_response_soup)
-        # tmp = forms['rform']
-        # forms = noaa.translator.get_forms(noaa.last_response_soup)
+            forms = noaa.translator.get_forms(noaa.last_response_soup)
+            num_in_cart = int(forms['rform']['num_in_cart'][0])
+
         noaa.get('shopping_cart')
         forms = noaa.translator.get_forms(noaa.last_response_soup)
         tmp = forms['shop']
-
-
-
-        trans = (lambda k, v, e: [e['format']]
-        if 'format' in k else (e['channel'] if 'channel' in k else v))
-        tmp = {k: trans(k, v, e) for k, v in list(tmp.items())}
         tmp['cocoon-action'] = ['PlaceOrder']
         self.conn.post('shop', data=tmp, form_name='shop')
         forms = noaa.translator.get_forms(noaa.last_response_soup)

@@ -25,8 +25,6 @@ class Action(object):
         return True
 
     def products(self):
-        import pdb
-        pdb.set_trace()
         html, form_name = self.get_main_form()
         form = dict(self.conn.translator.get_forms(html, list_options=True)[form_name])
         return [k.lower() for k in form['datatype_family'] if self.has_local_api(k.lower())]
