@@ -8,7 +8,7 @@ from multiprocessing import cpu_count
 
 import requests
 import urllib3
-from bs4 import BeautifulSoup as beautifulsoup
+from bs4 import BeautifulSoup
 from requests.exceptions import ConnectionError
 
 from .core import Action
@@ -38,7 +38,7 @@ class Auth(object):
 
     def check_login_result(self, conn):
         page = conn.last_response_soup
-        login_links = page('script', text=re.compile('writeLoginURL.*();'))
+        login_links = page('script', text=re.compile('writeLoginURL.*;'))
         conn.signed_in = (len(login_links) == 0)
         if not conn.signed_in:
             raise Exception('%s: Invalid NOAA user or wrong password.'
@@ -66,7 +66,7 @@ class Translator(object):
                                 and e.attrs['checked'] in ['1', 'Y'])
         all_values = not show_value
         if 'value' in e.attrs:
-            if (is_single(e) or is_checked(e) or all_values):
+            if is_single(e) or is_checked(e) or all_values:
                 value = e.attrs['value']
         return value
 
@@ -87,7 +87,7 @@ class Translator(object):
 
     def get_fields(self, form_soup, show_value):
         parse = lambda frm, cls: [e for e in self.get_value(
-                frm.select(cls), show_value
+            frm.select(cls), show_value
         )]
         elements = parse(form_soup, 'input')
         elements.extend(parse(form_soup, 'select'))
@@ -117,11 +117,8 @@ class Translator(object):
     def fill_form(self, page, name, data):
         forms = self.get_forms(page)
         clear = lambda x: x is not ''
-        form = {k: list(filter(clear, v)) for k, v in
-                list((forms[name]).items())}
-        form = {k: data[k] if k in list(data.keys())
-        else self.simplify(v)
-                for k, v in list(form.items())}
+        form = {k: list(filter(clear, v)) for k, v in list((forms[name]).items())}
+        form = {k: data[k] if k in list(data.keys()) else self.simplify(v) for k, v in list(form.items())}
         return [x for x in self.plain(form)]
 
 
@@ -139,9 +136,12 @@ class Subscribe(Action):
 
 class Connection(object):
     def __init__(self, username=None, password=None, verify=False):
-        self.headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.125 YaBrowser/17.7.1.716 (beta) Yowser/2.5 Safari/537.36'}
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.125 YaBrowser/17.7.1.716 (beta) Yowser/2.5 Safari/537.36'}
         self.session = requests.Session()
         self.verify = verify
+        self._cookies = None
+        self._last_response = None
         if username and password:
             self.base_uri = '://www.class.ncdc.noaa.gov/saa/products/'
             self.authenticate = Auth(username, password)
@@ -151,12 +151,19 @@ class Connection(object):
             self.request = Request(self)
             self.subscribe = Subscribe(self)
         else:
-            self.base_uri = '://www.class.ncdc.noaa.gov/saa/products/'
+            self.base_uri = '://www.class.ncdc.noaa.gov/'
 
     def next_up_datetime(self):
+        """Return the datetime when the server will be UP. Else returns the datetime of current time as it is UP and
+        running."""
+        from pytz import utc
         end = datetime.utcnow()
-        self.get('')
-        middle = self.last_response_soup.select('#middle p')
+        try:
+            self.get(url='')
+            middle = self.last_response_soup.select('#middle p')
+        except Exception as exc:
+            print('CLASS is UP and running...')
+            middle = ''
         if len(middle) > 0:
             text = middle[1].text
             regex = re.compile(", (.*), from (.*) UTC .* through (.*) UTC")
@@ -166,13 +173,12 @@ class Connection(object):
             end = datetime.strptime('%s %s' % (params[0], params[2]), pattern)
             if begin >= end:
                 end += timedelta(days=1)
-        from pytz import utc
         return end.replace(tzinfo=utc)
 
     @property
     def cookies(self):
         self._cookies = requests.utils.cookiejar_from_dict(
-                requests.utils.dict_from_cookiejar(self.session.cookies))
+            requests.utils.dict_from_cookiejar(self.session.cookies))
         return self._cookies
 
     @property
@@ -207,7 +213,7 @@ class Connection(object):
         return self.last_response_soup
 
     def pack(self, response, async=False):
-        soup = beautifulsoup(response.text, "lxml")
+        soup = BeautifulSoup(response.text, "lxml")
         if async:
             response.close()
         return soup
@@ -215,9 +221,9 @@ class Connection(object):
     def getmultipleasync(self, urls, proto='https'):
         reqs = [[[proto + self.base_uri + u],
                  {
-                     "headers"        : self.headers,
+                     "headers": self.headers,
                      # "session": self.session,
-                     "cookies"        : self.cookies,
+                     "cookies": self.cookies,
                      "allow_redirects": True
                  }] for u in urls]
         with ThreadPoolExecutor(max_workers=cpu_count()) as pool:

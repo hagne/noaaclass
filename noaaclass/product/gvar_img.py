@@ -33,22 +33,25 @@ resume_activity = (lambda t:
 resume_status = lambda t: element(t, 'td', -3).lower()
 resume_size = lambda t: int(element(t, 'td', -4))
 resume_order = lambda t: {
-    'id'           : resume_id(t),
+    'id': resume_id(t),
     'last_activity': resume_activity(t),
-    'status'       : resume_status(t),
-    'size'         : resume_size(t),
+    'status': resume_status(t),
+    'size': resume_size(t),
 }
 
 FILE_FORMATS = {
-    '.nc'  : 'NetCDF',
+    '.nc': 'NetCDF',
     '.area': 'Area',
     '.giff': 'GIF',
-    '.jpg' : 'JPG',
-    ''     : 'Raw'
+    '.jpg': 'JPG',
+    '': 'Raw'
 }
 
 
-class api(core.api):
+class Api(core.Api):
+    def __init__(self, action):
+        super(Api, self).__init__(action)
+
     def initialize(self):
         self.name = 'GVAR_IMG'
         self.name_upper = self.name.upper()
@@ -57,16 +60,14 @@ class api(core.api):
         enabled_to_remote = lambda x: 'Y' if x else 'N'
         single = lambda x, t: t(x[0])
         multiple = lambda l, t: list(map(t, l))
-        self.translate(single, 'enabled', enabled_to_local,
-                       'subhead_sub_enabled', enabled_to_remote)
+        self.translate(single, 'enabled', enabled_to_local, 'subhead_sub_enabled', enabled_to_remote)
         self.translate(single, 'name', direct, 'subhead_sub_description', str)
         self.translate(single, 'north', float, 'nlat', str)
         self.translate(single, 'south', float, 'slat', str)
         self.translate(single, 'west', float, 'wlon', str)
         self.translate(single, 'east', float, 'elon', str)
         self.translate(multiple, 'coverage', direct, 'Coverage', direct)
-        self.translate(multiple, 'schedule', direct, 'Satellite Schedule',
-                       direct)
+        self.translate(multiple, 'schedule', direct, 'Satellite Schedule', direct)
         self.translate(multiple, 'satellite', direct, 'Satellite', direct)
         self.translate(multiple, 'channel', int, 'chan_%s' % self.name, str)
         self.translate(single, 'format', direct, 'format_%s' % self.name, str)
@@ -164,7 +165,7 @@ class api(core.api):
             chs = [ch for ch in [int(ch.group(1)) if ch else None for ch in chs] if ch]
             chs.sort()
             other = {
-                'format' : FILE_FORMATS[exts[0]] if exts else 'unknown',
+                'format': FILE_FORMATS[exts[0]] if exts else 'unknown',
                 'channel': chs,
             }
             order.update(other)
@@ -182,9 +183,9 @@ class api(core.api):
             is_http = lambda i: 'www' in i.text
             is_ftp = lambda i: 'ftp' in i.text
             order['files']['http'].extend(
-                    self.obtain_items(last_response_soup, item, is_http))
+                self.obtain_items(last_response_soup, item, is_http))
             order['files']['ftp'].extend(
-                    self.obtain_items(last_response_soup, item, is_ftp))
+                self.obtain_items(last_response_soup, item, is_ftp))
 
     def parse_orders(self, noaa, orders, append_files, hours, async):
         urls = [('order_details?order_number=%s&hours=%i&page_number=1'
@@ -206,7 +207,7 @@ class api(core.api):
         page = noaa.get('order_list?order=&status=&type=USER'
                         '&displayDetails=N&hours=%i&status_page=1'
                         '&large_status=&group_size=1000&orderby=1' %
-                        (hours))
+                        hours)
         orders = self.initialize_orders(page)
         self.parse_orders(noaa, orders, append_files, hours, async)
         key = lambda x: str(x['id'])
@@ -216,8 +217,8 @@ class api(core.api):
     def request_new(self, e):
         noaa = self.conn
         noaa.get('search?sub_id=0&datatype_family={}&submit.x={}&submit.y={}'.format(self.name_upper,
-                                                                                    randint(1, 60),
-                                                                                    randint(1, 11)))
+                                                                                     randint(1, 60),
+                                                                                     randint(1, 11)))
         data = self.local_to_post(e)
         data['start_date'] = e['start'].strftime('%Y-%m-%d')
         data['start_time'] = e['start'].strftime('%H:%M:%S')

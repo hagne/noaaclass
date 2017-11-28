@@ -43,7 +43,7 @@ It can show all the supported products to be subscribed:
 ```python
 from noaaclass import noaaclass
 noaa = noaaclass.connect('username', 'password')
-print noaa.subscribe.products()
+print(noaa.subscribe.products())
 ```
 
 Then it can *create new* **subscriptions** to the **gvar_img** product:

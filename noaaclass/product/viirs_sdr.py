@@ -33,14 +33,17 @@ resume_activity = (lambda t:
 resume_status = lambda t: element(t, 'td', -3).lower()
 resume_size = lambda t: int(element(t, 'td', -4))
 resume_order = lambda t: {
-    'id'           : resume_id(t),
+    'id': resume_id(t),
     'last_activity': resume_activity(t),
-    'status'       : resume_status(t),
-    'size'         : resume_size(t),
+    'status': resume_status(t),
+    'size': resume_size(t),
 }
 
 
-class api(core.api):
+class Api(core.Api):
+    def __init__(self, action):
+        super(Api, self).__init__(action)
+
     def initialize(self):
         self.name = 'VIIRS_SDR'
         self.name_upper = self.name.upper()
@@ -49,8 +52,7 @@ class api(core.api):
         enabled_to_remote = lambda x: 'Y' if x else 'N'
         single = lambda x, t: t(x[0])
         multiple = lambda l, t: list(map(t, l))
-        self.translate(single, 'enabled', enabled_to_local,
-                       'subhead_sub_enabled', enabled_to_remote)
+        self.translate(single, 'enabled', enabled_to_local, 'subhead_sub_enabled', enabled_to_remote)
         self.translate(single, 'name', direct, 'subhead_sub_description', str)
         self.translate(single, 'north', float, 'nlat', str)
         self.translate(single, 'south', float, 'slat', str)
@@ -157,9 +159,9 @@ class api(core.api):
             is_http = lambda i: 'www' in i.text
             is_ftp = lambda i: 'ftp' in i.text
             order['files']['http'].extend(
-                    self.obtain_items(last_response_soup, item, is_http))
+                self.obtain_items(last_response_soup, item, is_http))
             order['files']['ftp'].extend(
-                    self.obtain_items(last_response_soup, item, is_ftp))
+                self.obtain_items(last_response_soup, item, is_ftp))
 
     def parse_orders(self, noaa, orders, append_files, hours, async):
         urls = [('order_details?order_number=%s&hours=%i&page_number=1'
@@ -181,7 +183,7 @@ class api(core.api):
         page = noaa.get('order_list?order=&status=&type=USER'
                         '&displayDetails=N&hours=%i&status_page=1'
                         '&large_status=&group_size=1000&orderby=1' %
-                        (hours))
+                        hours)
         orders = self.initialize_orders(page)
         self.parse_orders(noaa, orders, append_files, hours, async)
         key = lambda x: str(x['id'])

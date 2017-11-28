@@ -12,7 +12,7 @@ class TestCore(unittest.TestCase):
     def test_initialize(self):
         # Check if raise an Exception when the api don't define the initialize.
         with self.assertRaisesRegex(Exception, 'Unregistered API.'):
-            core.api('nothing')
+            core.Api('nothing')
 
 
 if __name__ == '__main__':

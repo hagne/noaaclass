@@ -7,15 +7,15 @@ class Action(object):
     def __init__(self, conn):
         self.conn = conn
 
-    def load(self, lib):
+    @staticmethod
+    def load(lib):
         return __import__(lib, fromlist=[''])
 
     def __getattr__(self, name):
         try:
-            return self.load('noaaclass.product.%s' % name).api(self)
+            return self.load('noaaclass.product.%s' % name).Api(self)
         except Exception as e:
-            raise Exception('There is no API to the "%s" product.\n%s'
-                            % (name, e))
+            raise Exception('There is no API to the "%s" product.\n%s' % (name, e))
 
     def has_local_api(self, product):
         try:
@@ -30,14 +30,16 @@ class Action(object):
         return [k.lower() for k in form['datatype_family'] if self.has_local_api(k.lower())]
 
 
-class api(object):
+class Api(object):
     def __init__(self, action):
         self.action = action
         self.keys = {'get': {}, 'set': {}}
+        self.name = None
+        self.name_upper = None
         self.initialize()
 
     def initialize(self):
-        raise Exception('Unregistered API.')
+        raise NotImplementedError('Unregistered API.')
 
     @property
     def conn(self):
@@ -53,8 +55,7 @@ class api(object):
 
     def local_to_post(self, local):
         var = self.keys['set']
-        return {var[k][0]: var[k][1](v) for k, v in list(local.items())
-                if k in list(var.keys())}
+        return {var[k][0]: var[k][1](v) for k, v in list(local.items()) if k in list(var.keys())}
 
     def post_to_local(self, post):
         get = lambda k: self.keys['get'][k]
@@ -62,8 +63,7 @@ class api(object):
         adapter = lambda k: get(k)[1]
         structure = lambda k, e, a: get(k)[2](e, a)
         keys = list(self.keys['get'].keys())
-        return {local(k): structure(k, e, adapter(k)) for k, e in list(post.items())
-                if k in keys}
+        return {local(k): structure(k, e, adapter(k)) for k, e in list(post.items()) if k in keys}
 
     def get(self, *args, **kwargs):
         return getattr(self, '%s_get' % self.action_name)(*args, **kwargs)
