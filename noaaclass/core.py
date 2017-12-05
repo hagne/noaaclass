@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import time
+import traceback
 
 
 class Action(object):
@@ -11,7 +12,12 @@ class Action(object):
     def load(lib):
         return __import__(lib, fromlist=[''])
 
+
     def __getattr__(self, name):
+        # if someone asks for original __getattr__, e.g. as in multyprocessing
+        if name.startswith('__'):
+            return object.__getattr__(self, name)
+
         try:
             return self.load('noaaclass.product.%s' % name).Api(self)
         except Exception as e:
