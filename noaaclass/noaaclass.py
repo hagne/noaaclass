@@ -143,7 +143,7 @@ class Connection(object):
         self._cookies = None
         self._last_response = None
         if username and password:
-            self.base_uri = '://www.class.ncdc.noaa.gov/saa/products/'
+            self.base_uri = '://www.bou.class.noaa.gov/saa/products/'
             self.authenticate = Auth(username, password)
             self.get('welcome')
             self.translator = Translator()
@@ -151,7 +151,7 @@ class Connection(object):
             self.request = Request(self)
             self.subscribe = Subscribe(self)
         else:
-            self.base_uri = '://www.class.ncdc.noaa.gov/'
+            self.base_uri = '://www.bou.class.noaa.gov/'
 
     def next_up_datetime(self):
         """Return the datetime when the server will be UP. Else returns the datetime of current time as it is UP and
