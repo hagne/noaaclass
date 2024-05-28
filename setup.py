@@ -28,7 +28,7 @@ def calculate_version():
 
 
 requirements = parse_requirements('requirements.txt')
-version_git = calculate_version()
+version_git = 0# todo: fix this: calculate_version()
 
 
 def get_long_description():

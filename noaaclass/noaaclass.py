@@ -212,9 +212,9 @@ class Connection(object):
                                               verify=self.verify)
         return self.last_response_soup
 
-    def pack(self, response, async=False):
+    def pack(self, response, asyncr=False):
         soup = BeautifulSoup(response.text, "lxml")
-        if async:
+        if asyncr:
             response.close()
         return soup
 
@@ -237,13 +237,13 @@ class Connection(object):
             result.append(self.last_response)
         return result
 
-    def getmultiple(self, urls, proto='https', async=False):
+    def getmultiple(self, urls, proto='https', asyncr=False):
         result = []
         if len(urls) > 0:
-            fx = self.getmultipleasync if async else self.getmultiplesync
+            fx = self.getmultipleasync if asyncr else self.getmultiplesync
             result = fx(urls, proto)
             result = [x for x in result if x is not None]
-        return list(map(lambda r, a=async: self.pack(r, a), result))
+        return list(map(lambda r, a=asyncr: self.pack(r, a), result))
 
     def post(self, url, data, proto='https', form_name=None):
         """
